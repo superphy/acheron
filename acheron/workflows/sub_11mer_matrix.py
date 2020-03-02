@@ -36,11 +36,12 @@ def get_files_to_analyze(file_or_directory):
     return sorted(files_list)
 
 
-def make_row(filename):
+def make_row(filename, num_cols, col_names):
     """
     Given a genome file, create and return a row of kmer counts
     to be inerted into the mer matrix.
     """
+    print('calling make row')
     # Filepath
     thefile = str(filename[0])
 
@@ -70,22 +71,10 @@ def make_row(filename):
     return genomeid,temp_row
 
 
-if __name__ == "__main__":
+def make_matrix(kmer_length, matrix_dtype, num_threads, results_path, save_path):
     """
-    Creates a matrix of kmer counts, and two dictionaries to keep
-    track of row and column names & their indices.
+    Creates a matrix of kmer counts
     """
-
-    #####################################################################
-    ## Input values
-    kmer_length = int(sys.argv[1])          # Set this to your kmer length.
-    matrix_dtype = sys.argv[2]              # Set the data type for the matrix.
-                                            #  ->Note uint8 has max kmercount of 256
-    num_threads = int(sys.argv[3])
-    results_path = str(sys.argv[4])
-    save_path = str(sys.argv[5])
-    #####################################################################
-
     col_names = {}
     row_names = {}
 
@@ -115,17 +104,10 @@ if __name__ == "__main__":
     # Then place completed rows into the matrix and update the row dictionary
     row_index = 0
     with ProcessPoolExecutor(max_workers=num_threads) as ppe:
-        for genomeid,temp_row in ppe.map(make_row, y):
+        for genomeid,temp_row in ppe.map(make_row, y, itertools.repeat(num_cols), itertools.repeat(col_names)):
             row_names[genomeid] = row_index
             kmer_matrix[row_index,:] = temp_row
             row_index += 1
-
-    # Save the matrix and its dictionaries
-    #if not os.path.exists(os.path.abspath(os.path.curdir)+'/'+save_path):
-        #os.mkdir(os.path.abspath(os.path.curdir)+'/'+save_path)
-    #np.save(os.path.abspath(os.path.curdir)+'/'+save_path+'kmer_matrix.npy', kmer_matrix)
-    #np.save(os.path.abspath(os.path.curdir)+'/'+save_path+'dict_kmer_rows.npy', row_names)
-    #np.save(os.path.abspath(os.path.curdir)+'/'+save_path+'dict_kmer_cols.npy', col_names)
 
     # Convert dict to array
     row_array = np.empty([num_rows], dtype='object')
@@ -139,9 +121,8 @@ if __name__ == "__main__":
     for key, index in col_names.items():
     	col_array[index] = key
 
-    # Save the np arrays
-    #np.save(os.path.abspath(os.path.curdir)+'/'+save_path+'kmer_rows.npy', row_array)
-    #np.save(os.path.abspath(os.path.curdir)+'/'+save_path+'kmer_cols.npy', col_array)
-
     df = pd.DataFrame(data = kmer_matrix, columns = col_array, index = row_array)
-    df.to_pickle("{}/{}mer_matrix.df".format(save_path, kmer_length))
+
+    return df
+
+    #df.to_pickle("{}/{}mer_matrix.df".format(save_path, kmer_length))

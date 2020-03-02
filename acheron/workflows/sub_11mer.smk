@@ -13,26 +13,28 @@ MATRIX_DTYPE = 'uint8'
 ids, = glob_wildcards(RAW_GENOMES_PATH+"{id}.fasta")
 
 rule all:
-  input:
-    "data/{}/features/{}mer_matrix.df".format(config['dataset'], config['kmer_length'])
+    input:
+        "data/{}/features/{}mer_matrix.df".format(config['dataset'], config['kmer_length'])
 
 rule clean:
-  input:
-    RAW_GENOMES_PATH+"{id}.fasta"
-  output:
-    "data/"+config['dataset']+"/wgs/clean/{id}.fasta"
-  run:
-    shell("python acheron/workflows/clean.py {input} data/"+config['dataset']+"/wgs/clean/")
+    input:
+        RAW_GENOMES_PATH+"{id}.fasta"
+    output:
+        "data/"+config['dataset']+"/wgs/clean/{id}.fasta"
+    run:
+        from clean import get_files_to_analyze, format_files
+        all_files = get_files_to_analyze(input[0])
+        format_files(all_files, "data/"+config['dataset']+"/wgs/clean/")
 
 rule count:
-  input:
-    "data/"+config['dataset']+"/wgs/clean/{id}.fasta"
-  output:
-    temp("data/"+config['dataset']+"/wgs/jellyfish_results/{id}.jf")
-  threads:
-    2
-  shell:
-    "jellyfish count -C -m {KMER_SIZE} -s 100M -t {threads} {input} -o {output}"
+    input:
+        "data/"+config['dataset']+"/wgs/clean/{id}.fasta"
+    output:
+        temp("data/"+config['dataset']+"/wgs/jellyfish_results/{id}.jf")
+    threads:
+        2
+    shell:
+        "jellyfish count -C -m {KMER_SIZE} -s 100M -t {threads} {input} -o {output}"
 
 rule dump:
     input:
@@ -42,10 +44,12 @@ rule dump:
     shell:
         "jellyfish dump {input} > {output}"
 
-rule matrix:
+rule sub11_matrix:
     input:
         expand("data/"+config['dataset']+"/wgs/jellyfish_results/{id}.fa", id=ids)
     output:
         "data/{}/features/{}mer_matrix.df".format(config['dataset'], config['kmer_length'])
-    shell:
-        "python acheron/workflows/sub_11mer_matrix.py {KMER_SIZE} {MATRIX_DTYPE} "+str(config['cores'])+" data/"+config['dataset']+"/wgs/jellyfish_results/ data/"+config['dataset']+"/features/"
+    run:
+        from sub_11mer_matrix import make_matrix
+        df = make_matrix(config['kmer_length'], MATRIX_DTYPE, config['cores'], "data/"+config['dataset']+"/wgs/jellyfish_results/", "data/"+config['dataset']+"/features/" )
+        df.to_pickle(output[0])
