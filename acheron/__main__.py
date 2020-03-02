@@ -27,7 +27,7 @@ def main():
     if arguments.action_command == 'build':
         if arguments.build_command == 'feature':
             if arguments.type == 'kmer':
-                build_kmer_matrix(arguments.dataset, arguments.kmer_length)
+                build_kmer_matrix(arguments.dataset, arguments.kmer_length, arguments.cores)
             elif arguments.type == 'genes':
                 build_genes_matrix(arguments.dataset)
             elif arguments.type == 'abricate':
@@ -101,14 +101,13 @@ def parse_arguments():
     build_parser = action_subparsers.add_parser('build',
                     help="For building feature matrices, data labels, or models")
     build_subparsers = build_parser.add_subparsers(title='build', dest='build_command')
-    #build_subparsers.required=True
 
     feature_parser = build_subparsers.add_parser('feature',
                     help="For building feature matrices", parents=[parent_parser])
     feature_parser.add_argument('-t', '--type', required = True, choices = ['kmer','genes','abricate','omnilog'])
     feature_parser.add_argument('-k', '--kmer_length', type = int, default=11,
                     help="Length of kmer to use, note k > 11 takes substantial resources, see docs")
-    feature_parser.add_argument('-db', '--database', choices = ['AMR','VF'],
+    feature_parser.add_argument('-db', '--database', choices = ['AMR','VF'], default='VF',
                     help="Choose between building AMR or VF with abricate")
 
     label_parser = build_subparsers.add_parser('label',
