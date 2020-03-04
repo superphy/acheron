@@ -9,7 +9,7 @@ jobs:
         - run:
             command: |
               conda env create -f data/envi.yaml
-              source activate skmer
+              source activate acheron
               pip install -e .
               pytest tests
 
