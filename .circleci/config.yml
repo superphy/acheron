@@ -10,6 +10,7 @@ jobs:
             command: |
               conda env create -f data/envi.yaml
               source activate skmer
+              pip install -e .
               pytest tests
 
 workflows:
