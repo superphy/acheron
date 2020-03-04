@@ -24,7 +24,7 @@ def get_files_to_analyze(file_or_directory):
     return sorted(files_list)
 
 
-def find_recurring_char(record, start, end):
+def find_recurring_char(nuc_sim, record, start, end):
     """
     :param record: sequence to check for reccuring character
     :param start: start of window to look in
@@ -32,9 +32,6 @@ def find_recurring_char(record, start, end):
     :return: character occuring with > X% density, else returns 'X'
     """
     window = end - start
-
-    # nucleotide simularity threshhold
-    nuc_sim = 0.75
 
     for nucleotide in ['A','T','G','C','N']:
         if record.count(nucleotide,start,end) / window > nuc_sim:
@@ -51,7 +48,12 @@ def format_files(files_list, output_dir):
     :param output_dir: user supplied output directory
     :return: success
     """
+    # highest grading threshold, larger scores mean searching longer distances
+    # but 25 should catch everything
     max_score=25
+    # nucleotide simularity threshhold
+    nuc_sim = 0.75
+
     for f in files_list:
         file_name = f
         with open(os.path.join(output_dir, file_name.split('/')[-1]), "w") as oh:
@@ -81,7 +83,7 @@ def format_files(files_list, output_dir):
                     # search blocks at the end of the contig for a sequence with a high density of a
                     # specific nucleotide, if there are no garbage sequences, recur_char will be 'X'
                     for i in range (30,410,20):
-                        recur_char = find_recurring_char(record.seq,length-i, length)
+                        recur_char = find_recurring_char(nuc_sim,record.seq,length-i, length)
                         if(recur_char != 'X'):
                             window_size = i
                             break
@@ -119,7 +121,7 @@ def format_files(files_list, output_dir):
                     recur_char ="X"
                     window_size =0
                     for i in range (30,410,20):
-                        recur_char = find_recurring_char(record.seq,0,i)
+                        recur_char = find_recurring_char(nuc_sim, record.seq,0,i)
                         if(recur_char != 'X'):
                             window_size = i
                             break
