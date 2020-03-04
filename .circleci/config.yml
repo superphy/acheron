@@ -1,0 +1,19 @@
+version: 2
+
+jobs:
+    test:
+      docker:
+        - image: continuumio/anaconda3:5.0.1
+      steps:
+        - checkout
+        - run:
+            command: |
+              conda env create -f data/envi.yaml
+              source activate skmer
+              pytest tests
+
+workflows:
+  version: 2
+  all:
+    jobs:
+      - test
