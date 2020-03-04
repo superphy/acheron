@@ -106,7 +106,7 @@ dependencies:
   - libuuid=2.32.1=h14c3975_1000
   - libwebp=1.0.1=h8e7db2f_0
   - libxcb=1.13=h14c3975_1002
-  - libxgboost=0.80=he6710b0_0
+  - libxgboost=0.90=he6710b0_1
   - libxml2=2.9.9=h13577e0_0
   - libxslt=1.1.33=h7d1a2b0_0
   - lockfile=0.12.2=py36_0
@@ -354,7 +354,7 @@ dependencies:
   - pthread-stubs=0.4=h14c3975_1001
   - ptyprocess=0.6.0=py36_0
   - py=1.8.1=py_0
-  - py-xgboost=0.80=py36hfc679d8_1
+  - py-xgboost=0.90=py36he6710b0_1
   - pyasn1=0.4.3=py36_0
   - pycparser=2.18=py36hf9f622e_1
   - pygpu=0.7.6=py36_0
