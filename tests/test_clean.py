@@ -17,7 +17,7 @@ def test_find_recurring_char():
 
 def test_format_files():
     files = clean.get_files_to_analyze(test_fasta)
-    os.makedirs(out)
+    os.makedirs(out, exist_ok=True)
     clean.format_files(files, out)
     from Bio import SeqIO
 
