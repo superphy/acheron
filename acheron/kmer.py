@@ -15,9 +15,9 @@ def print_genome_names(genomes):
 def build_kmer_matrix(dataset, kmer_length, cores):
     print("Building {}-mer matrix of {} sequences".format(kmer_length, dataset))
     if kmer_length <= 11:
-        os.system("snakemake -s acheron/workflows/sub_11mer.smk -j {0} \
-        --config kmer_length={1} dataset={2} cores={0}".format(
-        cores, kmer_length, dataset))
+        workflow_smk = "acheron/workflows/sub_11mer.smk"
     else:
-        todo
-        os.system("snakemake -s acheron/workflows/over_11mer.smk -j {}")
+        workflow_smk = "acheron/workflows/over_11mer.smk"
+    os.system("snakemake -s {0} -j {1} \
+    --config kmer_length={2} dataset={3} cores={1}".format(
+    workflow_smk, cores, kmer_length, dataset))

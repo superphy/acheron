@@ -39,6 +39,8 @@ def make_row(filename, num_cols, col_names):
         # Retrieve the kmer count as an int
         kmercount = record.id
         kmercount = int(kmercount)
+        if kmer_count>255:
+            kmer_count = 255
 
         # Lookup the seq in the column list for the index
         col_index = col_names[kmerseq]

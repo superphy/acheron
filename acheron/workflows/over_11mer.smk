@@ -1,5 +1,9 @@
 from clean import get_files_to_analyze
+import numpy as np
+import pandas as pd
+
 import math
+import os
 
 # Location of the raw genomes
 RAW_GENOMES_PATH = "data/{}/wgs/raw/".format(config['dataset'])
@@ -21,17 +25,21 @@ GENOMES = get_files_to_analyze(RAW_GENOMES_PATH)
 NUM_GENOMES = len(GENOMES)
 UNION_SPLITS = [i+1 for i in range(math.ceil(NUM_GENOMES/MAX_GENOMES))]
 
+MATRIX_SPLITS = [i+1 for i in range(math.ceil(NUM_GENOMES/128))]
+
 ids, = glob_wildcards(RAW_GENOMES_PATH+"{id}.fasta")
 
 # from sub_11mer.smk, we will use clean_fastas, count_kmers, dump_kmers
 subworkflow kmer:
+    workdir:
+        os.getcwd()
     snakefile:
         "sub_11mer.smk"
 
 rule all:
     input:
         "data/{}/features/{}mer_matrix.df".format(config['dataset'],
-        config['kmer_length'])"
+        config['kmer_length'])
 
 # for subsets of genomes, adding this as a seperate step saves on ram
 # as we cannot fit all genomes in memory at a single time, so we batch the kmers
@@ -47,53 +55,92 @@ rule batch_genomes_for_union:
         config['kmer_length'])
     run:
         from acheron.workflows import find_common_kmers
-        batches = find_common_kmers.batch_kmers(genomes, len(UNION_SPLITS))
+        batches = find_common_kmers.batch_genomes(GENOMES, len(UNION_SPLITS), 'col')
         np.save(output[0], batches)
 
+# find union of kmers in each batch
 rule batch_kmers:
     input:
         "data/{}/wgs/master_{}mers/batches.npy".format(config['dataset'],
         config['kmer_length'])
     output:
-        "data/"+config['dataset']+"/wgs/master_"+config['kmer_length']+
+        "data/"+config['dataset']+"/wgs/master_"+str(config['kmer_length'])+
         "mers/kmer_subset_{set_num}_of_"+str(len(UNION_SPLITS))+'.npy'
     run:
         from acheron.workflows import find_common_kmers
+        batches = np.load("data/{}/wgs/master_{}mers/batches.npy".format(
+        config['dataset'], config['kmer_length']), allow_pickle=True)
+        batch_row = batches[int(wildcards.set_num)-1]
+
         union_of_batch = find_common_kmers.find_union(config['kmer_length'],
-        config['dataset', batch_row, config['cores']])
+        config['dataset'], batch_row, config['cores'])
         np.save(output[0], union_of_batch)
 
+# merge all the unions from the above step
 rule merge_kmer_batches:
     input:
-        expand("data/"+config['dataset']+"/wgs/master_"+config['kmer_length']+
-        "mers/kmer_subset_{set_num}_of_"+str(len(UNION_SPLITS))+'.npy',
-        set_nums = UNION_SPLITS)
+        expand("data/"+config['dataset']+"/wgs/master_"+
+        str(config['kmer_length'])+"mers/kmer_subset_{set_num}_of_"+
+        str(len(UNION_SPLITS))+'.npy',set_num = UNION_SPLITS)
     output:
-        "data/"+config['dataset']+"/wgs/master_"+config['kmer_length']+
-        "mers/all_kmers.npy'
+        "data/"+config['dataset']+"/wgs/master_"+str(config['kmer_length'])+
+        "mers/all_kmers.npy"
     run:
         from acheron.workflows import find_common_kmers
         # im hoping here that input is a list of inputs that i can use,
         # gonna have to test this one
         master_mers = find_common_kmers.merge_masters(config['dataset'],
-        config['kmer_length'], input)
+        config['kmer_length'], input, len(UNION_SPLITS))
         np.save(output[0], master_mers)
 
 
 # now that we know what kmers we will eventually see, we can make parts
 # of the dataframe
+
+rule split_matrices:
+    output:
+        "data/{}/wgs/master_{}mers/matrix_splits.npy".format(config['dataset'],
+        config['kmer_length'])
+    run:
+        from acheron.workflows import find_common_kmers
+        batches = find_common_kmers.batch_genomes(GENOMES, len(MATRIX_SPLITS), 'col')
+        np.save(output[0], batches)
+
+# we start by building the matrix in sets, for easier distribution over
+# compute cluster nodes
 rule build_sub_matrices:
     input:
-        "data/"+config['dataset']+"/wgs/master_"+config['kmer_length']+
-        "mers/all_kmers.npy'
+        "data/"+config['dataset']+"/wgs/master_"+str(config['kmer_length'])+
+        "mers/all_kmers.npy",
+
+        kmer(expand("data/"+config['dataset']+"/wgs/"+
+        str(config['kmer_length'])+"mer_jellyfish_results/{id}.fa",id=ids)),
+
+        "data/{}/wgs/master_{}mers/matrix_splits.npy".format(config['dataset'],
+        config['kmer_length'])
+    threads:
+        16
     output:
-        #each split
+        "data/"+config['dataset']+"/wgs/master_"+str(config['kmer_length'])+
+        "mers/sub_df_{matrix_num}_of_"+str(len(MATRIX_SPLITS))+".df"
     run:
         #multi_mer_matrix
+        from over_11mer_matrix import make_matrix
+        df = make_matrix(config['dataset'], config['kmer_length'], MATRIX_DTYPE,
+        config['cores'], wildcards.matrix_num)
+        df.to_pickle(output[0])
+
+
 rule merge_sub_matrices:
     input:
-        #each split
+        expand("data/"+config['dataset']+"/wgs/master_"+
+        str(config['kmer_length'])+"mers/sub_df_{matrix_num}_of_"
+        +str(len(MATRIX_SPLITS))+".df", matrix_num = MATRIX_SPLITS)
     output:
-        #master_df
+        "data/{}/features/{}mer_matrix.df".format(config['dataset'],
+        config['kmer_length'])
     run:
-        #multi_mer_merge
+        # again, were hoping that the input is actually a list of inputs,(check)
+        final_matrix = pd.concat([pd.read_pickle(i) for i in input])
+
+        final_matrix.to_pickle(output[0])
