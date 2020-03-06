@@ -19,7 +19,6 @@ def make_row(filename, num_cols, col_names):
     Given a genome file, create and return a row of kmer counts
     to be inerted into the mer matrix.
     """
-    print('calling make row')
     # Filepath
     thefile = str(filename[0])
 
@@ -39,8 +38,8 @@ def make_row(filename, num_cols, col_names):
         # Retrieve the kmer count as an int
         kmercount = record.id
         kmercount = int(kmercount)
-        if kmer_count>255:
-            kmer_count = 255
+        if kmercount>255:
+            kmercount = 255
 
         # Lookup the seq in the column list for the index
         col_index = col_names[kmerseq]
