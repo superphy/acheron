@@ -14,22 +14,25 @@ from multiprocessing import cpu_count
 
 def batch_genomes(genomes, num_batches, order):
     """
-    populates 2D numpy array with len(rows)==num_batches in {order} major order
+    Populates 2D numpy array with len(rows)==num_batches in {order} major order.
+    Using col is for when you know you are using X number of nodes, and want-
+    to evenly distribute genomes across each node
+    Use row when you want to fill each node, i.e. you give each node 16 cores-
+    and would rather have 3 at 32 and 1 at 16 than 4 at 28
     """
     total_genomes = len(genomes)
 
     # num_batches designates number of rows in col major order
     # but number of cols in row major order
     genomes_per_batch = math.ceil(total_genomes/num_batches)
+    batches = np.empty([num_batches, genomes_per_batch], dtype=object)
 
     if order == 'col':
-        batches = np.empty([num_batches, genomes_per_batch], dtype=object)
         for i, genome in enumerate(genomes):
             batches[i%num_batches][i//num_batches] = genome
     elif order == 'row':
-        batches = np.empty([genomes_per_batch, num_batches], dtype=object)
         for i, genome in enumerate(genomes):
-            batches[i%genomes_per_batch][i//genomes_per_batch] = genome
+            batches[i//genomes_per_batch][i%genomes_per_batch] = genome
     else:
         raise Exception("Order must be specified as 'col' or 'row'")
 
@@ -57,6 +60,7 @@ def parse_fasta(genome, kmer_length, jf_path):
     for record in SeqIO.parse(jf_path, "fasta"):
         kmer_seq = record.seq
         kmer_seq = kmer_seq._get_seq_str_and_check_alphabet(kmer_seq)
+        print(kmer_seq)
         if(len(kmer_seq) == int(kmer_length)):
             current_multi_mers.append(kmer_seq)
     return current_multi_mers
