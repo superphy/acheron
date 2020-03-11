@@ -7,6 +7,9 @@ from acheron.workflows import find_common_kmers
 test_list = ['a','b','c','d','e','f','g']
 test_set = 'acheron_test_samples'
 
+jf_path = "data/acheron_test_samples/wgs/\
+11mer_jellyfish_results/subSRR2407535.fa"
+
 def test_batch_genomes():
     col_batches = find_common_kmers.batch_genomes(test_list, 3, 'col')
     assert np.array_equal(col_batches, np.array(
@@ -53,7 +56,3 @@ def test_parse_fasta():
     for seq in ['seq1', 'seq2','seq3']:
         assert seq in multi_mers
     assert isinstance(multi_mers[0], str)
-
-"""
-def test_find_union():
-"""

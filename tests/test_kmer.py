@@ -23,8 +23,17 @@ def test_build_kmer_matrix():
     assert df['AAAAAAAAAAA'].values[0] == 0
     assert df['AAAAAATACTT'].values[0] == 1
     os.system("rm data/acheron_test_samples/features/11mer_matrix.df")
-    os.system("rm -r data/acheron_test_samples/wgs/11mer_jellyfish")
+    os.system("rm -r data/acheron_test_samples/wgs/11mer_jellyfish*")
+    os.system("rm -r data/acheron_test_samples/wgs/clean/")
 
-    #TODO: 31 mer, might be too wide scope for macro test,
-    #      maybe just test sub funcs
-    #kmer.build_kmer_matrix(dataset, 31, 1)
+    kmer.build_kmer_matrix(dataset, 31, 1)
+    df = pd.read_pickle("data/{}/features/31mer_matrix.df".format(dataset))
+    assert len(df.values) == 1
+    assert len(df.values[0]) == 4294
+    assert np.sum(df.values) == 4917
+    assert len(df.columns[0]) == 31
+    assert df['AGCTCCATGAGTAAATCACTTCACCTACATG'].values[0] == 1
+    os.system("rm data/acheron_test_samples/features/31mer_matrix.df")
+    os.system("rm -r data/acheron_test_samples/wgs/31mer_jellyfish*")
+    os.system("rm -r data/acheron_test_samples/wgs/master_31mers/")
+    os.system("rm -r data/acheron_test_samples/wgs/clean/")
