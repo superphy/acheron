@@ -111,7 +111,8 @@ def parse_arguments():
                     help="Choose between building AMR or VF with abricate")
 
     label_parser = build_subparsers.add_parser('label',
-                    help="For building labels for the data")
+                    help="For building labels for the data",
+                    parents = [parent_parser])
     label_parser.add_argument('-m', '--module', default = 'custom', choices = ['MIC'],
                     help="Specify the pre-built module you would like to build from")
     label_parser.add_argument('-n', '--name', required=True,
