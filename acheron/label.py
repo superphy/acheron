@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 
 from acheron.workflows import labeler
 
@@ -9,11 +10,16 @@ def build_module_label(dataset, module, name, columns, path, key):
     key={} based on module {}".format(
         name, dataset, columns, path, key, module))
 
-    """
-        os.system("snakemake -s {0} -j {1} \
-        --config kmer_length={2} dataset={3} cores={1}".format(
-        workflow_smk, cores, kmer_length, dataset))
-    """
+    if module =='MIC':
+        workflow_smk = "acheron/workflows/mic_labels.smk"
+    else:
+        raise Exception("Only supported modules are [MIC], or switch to custom")
+
+
+    os.system("snakemake -s {} -j {} \
+    --config path={} dataset={} columns={} key={} name={}".format(
+    workflow_smk, 1, path, dataset, columns, key, name))
+
 
 def build_custom_label(dataset, name, columns, path, key):
     print("Building custom labels named {} for dataset {} for columns {} in {} \
