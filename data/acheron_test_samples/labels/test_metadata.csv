@@ -1,5 +1,5 @@
-names,AMP_MIC,CIP_MIC,AMP_SIR,CIP_SIR
-subSRR2407535,>= 32,16,S,S
-extra_1,abcd,1,S,R
-extra_2,32,,R,S
-extra_3,<= 4,,R,R
+names,AMP_MIC,CIP_MIC,AMP_SIR,CIP_SIR,SXT_MIC
+subSRR2407535,>= 32,16,S,S,0.125
+extra_1,abcd,1,S,R,64
+extra_2,32,,R,S,>64
+extra_3,<= 4,,R,R,>= 64

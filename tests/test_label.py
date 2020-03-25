@@ -19,16 +19,18 @@ def test_build_custom_label():
     os.system("rm data/acheron_test_samples/labels/test_SIR.df")
 
 def test_build_module_label():
-    label.build_module_label('acheron_test_samples','MIC', 'test_MIC', 'AMP_MIC,CIP_MIC',
-    meta_path, 'names')
+    label.build_module_label('acheron_test_samples','MIC', 'test_MIC',
+    'AMP_MIC,CIP_MIC,SXT_MIC',meta_path, 'names')
 
     df = pd.read_pickle("data/acheron_test_samples/labels/test_MIC.df")
 
     assert len(df.index) == 4
-    assert len(df.columns) == 2
+    assert len(df.columns) == 3
     assert df['AMP']['subSRR2407535'] == '>=32.0000'
     assert df['AMP']['extra_1'] == 'invalid'
     assert df['AMP']['extra_2'] == '>=32.0000'
     assert df['AMP']['extra_3'] == 'invalid'
+    assert df['SXT']['subSRR2407535'] == '<=0.1250'
+    assert df['SXT']['extra_1'] == '>=64.0000'
 
     os.system("rm data/acheron_test_samples/labels/test_MIC.df")

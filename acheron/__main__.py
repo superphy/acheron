@@ -73,14 +73,14 @@ def parse_arguments():
                     help="Number of cores to use, defaults to number of system cores minus 1")
     parent_parser.add_argument('-o', '--out', default = 'stdout',
                     help="Output path/file to save results")
-    parent_parser.add_argument('-d', '--dataset', required = True,
-                    help="Name of dataset, what the name of the folder containing sequences is named")
 
     test_params = argparse.ArgumentParser(add_help=False)
     test_params.add_argument('-x', '--train', required=True,
                     help="Name of dataset to tests models on")
     test_params.add_argument('-y', '--test', required=False,
                     help="Name of dataset to tests models on, not passing this results sets cv=True")
+    test_params.add_argument('-v', '--validation',
+                    help="name of dataset to validate hyperparameters with")
     test_params.add_argument('-f', '--num_features',
                     help="Number of features to keep past feature selection, not passing will skip feature selection")
     # labels required for supervised only
@@ -90,6 +90,12 @@ def parse_arguments():
                     help="The model you would like to build")
     test_params.add_argument('-p', '--hyperparam',
                     help="Enable hyperparameter optimizations and nest the cross validations, will use training set to validate hyperparams")
+    test_params.add_argument('-a', '--attribute',required=True,
+                    help="Which attribute to train the model on (column of label)")
+    test_params.add_argument('-t', '--type', required=True,
+                    help="which features the model is based on (i.e. 11mer or AMR)")
+    test_params.add_argument('--trial', default=1,
+                    help="to run the same test multiple times, change trail number")
 
     # main parser
     root_parser = argparse.ArgumentParser()
@@ -109,6 +115,9 @@ def parse_arguments():
                     help="Length of kmer to use, note k > 11 takes substantial resources, see docs")
     feature_parser.add_argument('-db', '--database', choices = ['AMR','VF'], default='VF',
                     help="Choose between building AMR or VF with abricate")
+    feature_parser.add_argument('-d', '--dataset', required = True,
+                    help="Name of dataset, what the name of the folder containing sequences is named")
+
 
     label_parser = build_subparsers.add_parser('label',
                     help="For building labels for the data",
@@ -123,6 +132,9 @@ def parse_arguments():
                     help="columns header containing the id/name/sequence filename")
     label_parser.add_argument('-p', '--path', required=True,
                     help="path to xlsx, csv, or tsv containing label data")
+    label_parser.add_argument('-d', '--dataset', required = True,
+                    help="Name of dataset, what the name of the folder containing sequences is named")
+
 
     model_parser = build_subparsers.add_parser('model', parents=[parent_parser,test_params],
                     help="For building machine learning models")
