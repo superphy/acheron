@@ -86,6 +86,7 @@ def parse_arguments():
     # labels required for supervised only
     test_params.add_argument('-l', '--label',
                     help="what labels to base the models on, created by `acheron build label ...` ")
+    test_params.add_argument('--columns', help="subset of columns in label")
     test_params.add_argument('-m', '--model', default='XGB', choices = ['XGB','SVM','ANN','kSNP3'],
                     help="The model you would like to build")
     test_params.add_argument('-p', '--hyperparam',
@@ -96,6 +97,7 @@ def parse_arguments():
                     help="which features the model is based on (i.e. 11mer or AMR)")
     test_params.add_argument('--trial', default=1,
                     help="to run the same test multiple times, change trail number")
+    test_params.add_argument('--cv', default=5, help="number of folds in cross validation")
 
     # main parser
     root_parser = argparse.ArgumentParser()
@@ -138,7 +140,8 @@ def parse_arguments():
 
     model_parser = build_subparsers.add_parser('model', parents=[parent_parser,test_params],
                     help="For building machine learning models")
-
+    model_parser.add_argument('-k', '--folds', default = 5,
+                    help="How many folds for k fold cross validation, default=5")
     # Result Subparser
     # need to specify each parameter, for a single model
     result_parser = action_subparsers.add_parser('result', parents=[parent_parser,test_params],

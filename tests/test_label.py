@@ -16,7 +16,7 @@ def test_build_custom_label():
     assert df.index[0] == 'subSRR2407535'
     assert df['AMP_SIR']['subSRR2407535'] == 'S'
 
-    os.system("rm data/acheron_test_samples/labels/test_SIR.df")
+    #os.system("rm data/acheron_test_samples/labels/test_SIR.df")
 
 def test_build_module_label():
     label.build_module_label('acheron_test_samples','MIC', 'test_MIC',
@@ -33,4 +33,4 @@ def test_build_module_label():
     assert df['SXT']['subSRR2407535'] == '<=0.1250'
     assert df['SXT']['extra_1'] == '>=64.0000'
 
-    os.system("rm data/acheron_test_samples/labels/test_MIC.df")
+    #os.system("rm data/acheron_test_samples/labels/test_MIC.df")
