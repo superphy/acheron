@@ -12,6 +12,9 @@ from .omnilog import build_omnilog_matrix
 from .label import build_module_label
 from .label import build_custom_label
 
+from .download import download_antibiogram
+from .download import download_genomes
+
 from .model import build_model
 
 # Result Functions
@@ -61,6 +64,15 @@ def main():
     elif arguments.action_command == 'summary':
         print('finish me ')
 
+    # Download Caller
+    elif arguments.action_command == 'download':
+        if arguments.download_command == 'antibiogram':
+            download_antibiogram(arguments.database, arguments.pathogen, arguments.email, arguments.antimicrobial, arguments.path, arguments.use_local, arguments.check_date)
+        elif arguments.download_command == 'genomes':
+            download_genomes(arguments.input, arguments.output)
+        else:
+            raise argparse.ArgumentError(arguments.download_command, "Only downloading genomes and antibiogram data is supported right now")
+
     else:
         raise argparse.ArgumentError(arguments.action_command, "acheron requires one of the positional arguments listed above")
 
@@ -82,7 +94,7 @@ def parse_arguments():
     test_params.add_argument('-v', '--validation',
                     help="name of dataset to validate hyperparameters with")
     test_params.add_argument('-f', '--num_features',
-                    help="Number of features to keep past feature selection, not passing will skip feature selection")
+                    help="Number of featuressequenc to keep past feature selection, not passing will skip feature selection")
     # labels required for supervised only
     test_params.add_argument('-l', '--label',
                     help="what labels to base the models on, created by `acheron build label ...` ")
@@ -99,11 +111,37 @@ def parse_arguments():
                     help="to run the same test multiple times, change trail number")
     test_params.add_argument('--cv', default=5, help="number of folds in cross validation")
 
+    download_params = argparse.ArgumentParser(add_help=False)
+    download_params.add_argument('-db', '--database', required=True, action='append',
+                    help="Which database or databases in [NCBI, PATRIC] to download from. Add multiple with `acheron download -db NCBI -db PATRIC`")
+    download_params.add_argument('--pathogen', required=True, help="Which pathogen for which to download the data")
+
     # main parser
     root_parser = argparse.ArgumentParser()
 
     action_subparsers = root_parser.add_subparsers(title='action', dest='action_command',
-                    help="What action you would like to take in ['build','result','summary']")
+                    help="What action you would like to take in ['build','result','summary','download']")
+
+    # Download subparser
+    download_parser = action_subparsers.add_parser('download',
+                    help="For downloading metadata and loading it into the correct format")
+    download_subparsers = download_parser.add_subparsers(title='download', dest="download_command")
+
+    antibiogram_parser = download_subparsers.add_parser('antibiogram',
+                    help="For downloading/updating antibiogram data", parents=[download_params,parent_parser])
+    antibiogram_parser.add_argument('--email', help="NCBI requires an email address", required=True)
+    antibiogram_parser.add_argument('-abx', '--antimicrobial', default='all')
+    antibiogram_parser.add_argument('-p','--path', help="Save path and file name for resulting dataframe", required=True)
+    antibiogram_parser.add_argument('--use_local', help="Same usage as -db, will use local copy for merging.\
+                    For example, if you wanted to use local PATRIC but pull a new NCBI, you would pass `--use_local PATRIC`",
+                    action='append')
+    antibiogram_parser.add_argument('--check_date', default=False, action='store_true',
+                    help="checks the date the antibiograms were pulled")
+    # add a use_local path
+
+    genome_parser = download_subparsers.add_parser('genomes', help="For downloading missing genomes" )
+    genome_parser.add_argument('--input', help="Path to antibiogram sheet containing biosamples", required=True)
+    genome_parser.add_argument('--output', help="Location to save to and check for pre-existing genomes", required=True)
 
     # Build Subparser
     build_parser = action_subparsers.add_parser('build',
@@ -164,6 +202,8 @@ def parse_arguments():
             result_parser.print_help(sys.stderr)
         elif args.action_command == 'summary':
             summary_parser.print_help(sys.stderr)
+        elif args.action_command == 'download':
+            download_parser.print_help(sys.stderr)
         else:
             raise Exception('uncaught erroneous action_command')
     return args
