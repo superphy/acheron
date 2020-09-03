@@ -94,7 +94,7 @@ def parse_arguments():
     test_params.add_argument('-v', '--validation',
                     help="name of dataset to validate hyperparameters with")
     test_params.add_argument('-f', '--num_features',
-                    help="Number of featuressequenc to keep past feature selection, not passing will skip feature selection")
+                    help="Number of features to keep past feature selection, not passing will skip feature selection")
     # labels required for supervised only
     test_params.add_argument('-l', '--label',
                     help="what labels to base the models on, created by `acheron build label ...` ")
