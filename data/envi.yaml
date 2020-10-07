@@ -1,135 +1,152 @@
 name: acheron
 channels:
-  - anaconda
   - bioconda
   - conda-forge
+  - anaconda
   - defaults
 dependencies:
+  - _libgcc_mutex=0.1=main
   - _py-xgboost-mutex=2.0=cpu_0
   - _tflow_180_select=2.0=mkl
-  - absl-py=0.2.2=py_0
+  - absl-py=0.10.0=py36_0
   - aioeasywebdav=2.2.0=py36_0
-  - aiohttp=3.5.4=py36h14c3975_0
+  - aiohttp=3.6.2=py36h7b6447c_0
   - aragorn=1.2.38=h470a237_2
-  - asn1crypto=0.24.0=py36_0
-  - astor=0.6.2=py36_1
-  - async-timeout=3.0.1=py_1000
-  - attrs=19.1.0=py_0
-  - backcall=0.1.0=py36_0
-  - backports=1.0=py36_1
-  - backports.weakref=1.0rc1=py36_1
+  - asn1crypto=1.4.0=py_0
+  - astor=0.8.1=py36_0
+  - async-timeout=3.0.1=py36_0
+  - attrs=20.2.0=py_0
+  - backcall=0.2.0=py_0
+  - backports=1.0=py_2
+  - backports.weakref=1.0.post1=py_1
   - barrnap=0.9=1
-  - bcrypt=3.1.4=py36h621fe67_0
+  - bcrypt=3.2.0=py36h7b6447c_0
   - bedtools=2.27.1=he941832_2
-  - biopython=1.71=py36h637b7d7_0
+  - binutils_impl_linux-64=2.31.1=h6176602_1
+  - binutils_linux-64=2.31.1=h6176602_9
+  - biopython=1.78=py36h7b6447c_0
   - blas=1.0=mkl
   - blast=2.7.1=boost1.64_3
   - boost=1.64.0=py36_4
   - boost-cpp=1.64.0=1
-  - bzip2=1.0.6=1
-  - ca-certificates=2020.1.1=0
-  - cachecontrol=0.12.5=py36_0
+  - bzip2=1.0.8=h7b6447c_0
+  - ca-certificates=2020.7.22=0
+  - cachecontrol=0.12.6=py_0
   - cairo=1.14.12=he6fea26_5
   - cd-hit=4.6.8=0
-  - certifi=2019.11.28=py36_0
-  - cffi=1.11.5=py36h9745a5d_0
+  - certifi=2020.6.20=py36_0
+  - cffi=1.14.3=py36he30daa8_0
   - chardet=3.0.4=py36_1003
-  - click=7.0=py_0
+  - click=7.1.2=py_0
   - cryptography=2.2.2=py36h14c3975_0
   - cycler=0.10.0=py36_0
+  - cython=0.29.21=py36he6710b0_0
   - dbus=1.13.0=h3a4f0e9_0
-  - docutils=0.14=py36hb0f60f5_0
-  - drmaa=0.7.8=py36_0
+  - docutils=0.16=py36_1
+  - drmaa=0.7.9=py36_0
   - dropbox=5.2.1=py36_0
-  - et_xmlfile=1.0.1=py36_0
-  - expat=2.2.5=hfc679d8_1
+  - ecdsa=0.16.0=py_0
+  - et_xmlfile=1.0.1=py_1001
+  - expat=2.2.9=he6710b0_2
   - fasttree=2.1.10=0
   - filechunkio=1.6=py36_0
   - fontconfig=2.13.1=he4413a7_1000
-  - freetype=2.10.0=he983fc9_0
+  - freetype=2.10.2=h5ab3b9f_0
   - ftputil=3.2=py36_0
-  - gast=0.2.0=py36_0
-  - gettext=0.19.8.1=0
-  - giflib=5.1.4=h470a237_0
+  - gast=0.4.0=py_0
+  - gcc_impl_linux-64=7.3.0=habb00fd_1
+  - gcc_linux-64=7.3.0=h553295d_9
+  - gettext=0.19.8.1=h9b4dc7a_1
+  - giflib=5.1.4=h14c3975_1
   - glib=2.55.0=0
-  - gmp=6.1.2=hfc679d8_0
+  - gmp=6.1.2=h6c8ec71_1
   - gnutls=3.5.17=0
-  - graphite2=1.3.11=hfc679d8_0
+  - graphite2=1.3.14=h23475e2_0
   - graphviz=2.38.0=hcf1ce16_1009
   - grpcio=1.12.1=py36hdbcaa40_0
-  - gst-plugins-base=1.8.0=0
-  - gstreamer=1.8.0=0
+  - gst-plugins-base=1.14.0=he9c8b40_0
+  - gstreamer=1.14.0=hb31296c_0
+  - gxx_impl_linux-64=7.3.0=hdf63c60_1
+  - gxx_linux-64=7.3.0=h553295d_9
   - harfbuzz=1.9.0=h08d66d9_0
-  - hdf5=1.10.2=0
+  - hdf5=1.10.7=hb1b8bf9_0
+  - hdmedians=0.14.1=py36hdd07704_0
   - hmmer=3.2=hfc679d8_3
   - html5lib=0.9999999=py36_0
-  - icu=58.2=hfc679d8_0
-  - idna=2.7=py36_0
-  - idna_ssl=1.1.0=py36_1000
+  - icu=58.2=he6710b0_3
+  - idna=2.10=py_0
+  - idna_ssl=1.1.0=py36_0
   - imbalanced-learn=0.6.2=py_0
+  - importlib-metadata=1.7.0=py36_0
+  - importlib_metadata=1.7.0=0
   - infernal=1.1.2=h470a237_1
-  - intel-openmp=2018.0.3=0
+  - iniconfig=1.0.1=py_0
+  - intel-openmp=2020.2=254
   - ipython_genutils=0.2.0=py36_0
   - java-jdk=8.0.92=1
   - jdcal=1.4.1=py_0
   - jellyfish=2.2.10=h2d50403_0
-  - jemalloc=4.5.0=0
-  - joblib=0.14.1=py_0
+  - jemalloc=5.0.1=hf484d3e_1
+  - joblib=0.17.0=py_0
   - jpeg=9c=h14c3975_1001
-  - kiwisolver=1.1.0=py36he6710b0_0
+  - kiwisolver=1.2.0=py36hfd86e86_0
+  - lcms2=2.11=h396b838_0
   - libblas=3.8.0=7_h6e990d7_netlib
   - libcblas=3.8.0=7_h6e990d7_netlib
-  - libffi=3.2.1=hd88cf55_4
+  - libffi=3.3=he6710b0_2
   - libgcc=7.2.0=h69d50b8_2
-  - libgcc-ng=8.2.0=hdf63c60_1
-  - libgd=2.2.5=h5400f36_4
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libgd=2.2.5=h0db58fd_3
   - libgfortran=3.0.0=1
-  - libgfortran-ng=7.2.0=hdf63c60_3
-  - libgpuarray=0.7.6=0
-  - libiconv=1.15=h470a237_1
-  - libidn11=1.33=0
+  - libgfortran-ng=7.3.0=hdf63c60_0
+  - libgpuarray=0.7.6=h14c3975_0
+  - libiconv=1.15=h63c8f33_5
+  - libidn11=1.33=h7b6447c_0
   - liblapack=3.8.0=7_h6e990d7_netlib
-  - libopenblas=0.2.20=h9ac9557_7
-  - libpng=1.6.37=hed695b0_0
-  - libprotobuf=3.5.2=0
-  - libsodium=1.0.16=h1bed415_0
-  - libstdcxx-ng=8.2.0=hdf63c60_1
-  - libtiff=4.0.9=he6b73bb_1
-  - libtool=2.4.6=0
+  - libopenblas=0.3.10=h5a2b251_0
+  - libpng=1.6.37=hbc83047_0
+  - libprotobuf=3.13.0=hd408876_0
+  - libsodium=1.0.18=h7b6447c_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - libtiff=4.1.0=h2733197_1
+  - libtool=2.4.6=h7b6447c_1005
   - libuuid=2.32.1=h14c3975_1000
-  - libwebp=0.5.2=7
-  - libxcb=1.13=h1bed415_1
-  - libxgboost=0.80=hfc679d8_1
-  - libxml2=2.9.8=h422b904_2
-  - libxslt=1.1.32=h88dbc4e_1
+  - libwebp=1.0.1=h8e7db2f_0
+  - libxcb=1.14=h7b6447c_0
+  - libxgboost=0.90=he6710b0_1
+  - libxml2=2.9.10=he19cac6_1
+  - libxslt=1.1.34=hc22bd24_0
   - lockfile=0.12.2=py36_0
+  - lz4-c=1.9.2=he6710b0_1
   - mafft=7.313=1
-  - markdown=2.6.11=py_0
+  - markdown=3.3=py36_0
   - markupsafe=1.1.1=py36h7b6447c_0
-  - matplotlib-base=3.1.3=py36hef1b27d_0
+  - matplotlib-base=3.3.1=py36h817c723_0
   - mcl=14.137=h470a237_3
   - minced=0.3.2=0
-  - mkl=2018.0.3=1
-  - mkl-service=1.1.2=py36h651fb7a_4
-  - mkl_fft=1.0.4=py36h4414c95_1
-  - mkl_random=1.0.1=py36h4414c95_1
-  - msgpack-python=0.5.6=py36h6bb024c_1
-  - multidict=4.5.2=py36h14c3975_1000
+  - mkl=2020.2=256
+  - mkl-service=2.3.0=py36he904b0f_0
+  - mkl_fft=1.2.0=py36h23d657b_0
+  - mkl_random=1.1.1=py36h0573a6f_0
+  - more-itertools=8.5.0=py_0
+  - msgpack-python=1.0.0=py36hfd86e86_1
+  - multidict=4.7.6=py36h7b6447c_1
   - nano=2.4.1=0
-  - natsort=6.0.0=py_0
+  - natsort=7.0.1=py_0
   - ncurses=5.9=10
   - nettle=3.3=0
   - nose=1.3.7=py36_2
-  - numpy=1.18.1=py36h95a1406_0
-  - openjdk=8.0.121=1
-  - openpyxl=3.0.3=py_0
+  - numpy-base=1.19.1=py36hfa32c7d_0
+  - olefile=0.46=py36_0
+  - openjdk=8.0.152=h7b6447c_3
+  - openpyxl=3.0.5=py_0
   - openssl=1.0.2u=h7b6447c_0
-  - pandas=1.0.1=py36h0573a6f_0
+  - packaging=20.4=py_0
   - pango=1.40.14=hf0c64fd_1003
   - parallel=20180522=0
-  - paramiko=2.4.1=py36_0
+  - paramiko=1.18.4=py36h0d01e40_0
   - patsy=0.5.1=py36_0
-  - pcre=8.41=1
+  - pcre=8.44=he6710b0_0
   - perl=5.22.0.1=0
   - perl-aceperl=1.92=0
   - perl-algorithm-diff=1.1903=pl5.22.0_1
@@ -332,58 +349,65 @@ dependencies:
   - perl-xml-xpathengine=0.14=0
   - perl-xsloader=0.22=pl5.22.0_0
   - perl-yaml=1.24=pl522_1
-  - pip=9.0.3=py36_0
+  - pillow=7.2.0=py36hb39fc2d_0
+  - pip=20.2.3=py36_0
   - pixman=0.34.0=2
+  - pluggy=0.13.1=py36_0
   - prank=v.170427=h2d50403_1
   - prodigal=2.6.3=1
   - prokka=1.13=2
-  - prompt_toolkit=3.0.3=py_0
-  - protobuf=3.5.2=py36_0
-  - psutil=5.4.6=py36h14c3975_0
+  - protobuf=3.13.0=py36he6710b0_1
+  - psutil=5.7.2=py36h7b6447c_0
   - ptyprocess=0.6.0=py36_0
-  - py=1.8.1=py_0
-  - py-xgboost=0.80=py36hfc679d8_1
-  - pyasn1=0.4.3=py36_0
-  - pycparser=2.18=py36hf9f622e_1
-  - pygpu=0.7.6=py36_0
-  - pynacl=1.2.1=py36h14c3975_0
-  - pyparsing=2.4.6=py_0
+  - py=1.9.0=py_0
+  - py-xgboost=0.90=py36he6710b0_1
+  - pyasn1=0.4.8=py_0
+  - pycparser=2.20=py_2
+  - pycrypto=2.6.1=py36h7b6447c_10
+  - pygpu=0.7.6=py36heb32a55_0
+  - pynacl=1.4.0=py36h7b6447c_1
+  - pyparsing=2.4.7=py_0
   - pyqt=4.11.4=py36_3
-  - pysftp=0.2.9=py36_0
-  - pytest=3.2.2=py_0
+  - pysftp=0.2.9=py_1
+  - pytest=6.1.0=py36_0
   - python=3.6.5=1
   - python-dateutil=2.8.1=py_0
   - python-dotenv=0.9.1=py_0
-  - pytz=2019.3=py_0
+  - python-wget=3.2=py_0
+  - pytz=2020.1=py_0
+  - pyyaml=5.3.1=py36h7b6447c_1
   - qt=4.8.7=4
-  - readline=7.0=0
+  - readline=7.0=hb321a52_4
   - requests=2.14.2=py36_0
   - roary=3.12.0=pl5.22.0_0
-  - scikit-bio=0.5.2=py36h3010b51_0
-  - scikit-learn=0.22.2.post1=py36hcdab131_0
-  - scipy=1.4.1=py36h921218d_0
+  - scikit-bio=0.5.4=py36hdd07704_0
+  - scikit-learn=0.23.2=py36h0573a6f_0
+  - scipy=1.5.2=py36h0b6359f_0
   - sip=4.18=py36_1
-  - six=1.14.0=py36_0
+  - six=1.15.0=py_0
   - snakemake=4.0.0=py36_0
   - sqlite=3.20.1=2
-  - statsmodels=0.9.0=py36h035aef0_0
-  - tabulate=0.8.2=py_0
+  - statsmodels=0.11.1=py36h7b6447c_0
+  - tabulate=0.8.7=py36_0
   - tbl2asn=25.6=2
   - tensorboard=1.8.0=py36hf484d3e_0
   - tensorflow=1.8.0=h01c6a4e_0
   - tensorflow-base=1.8.0=py36hee38f2d_0
   - tensorflow-mkl=1.8.0=h5a53b39_0
   - termcolor=1.1.0=py36_1
-  - theano=1.0.2=py36_0
+  - theano=1.0.4=py36hfd86e86_0
+  - threadpoolctl=2.1.0=pyh5ca1d4c_0
   - tidyp=1.04=1
-  - tk=8.6.9=h84994c4_1001
+  - tk=8.6.10=hbc83047_0
+  - toml=0.10.1=py_0
   - traitlets=4.3.3=py36_0
-  - typing_extensions=3.7.2=py36_1000
+  - typing_extensions=3.7.4.3=py_0
   - urllib3=1.12=py36_0
-  - werkzeug=0.14.1=py_0
-  - wheel=0.31.0=py36_0
-  - wrapt=1.10.11=py36h28b7045_0
-  - xlrd=1.1.0=py36_1
+  - werkzeug=1.0.1=py_0
+  - wget=1.19.5=h1ad7b7a_0
+  - wheel=0.35.1=py_0
+  - wrapt=1.12.1=py36h7b6447c_1
+  - xlrd=1.2.0=py36_0
   - xorg-kbproto=1.0.7=h14c3975_1002
   - xorg-libice=1.0.9=h516909a_1004
   - xorg-libsm=1.2.3=h84519dc_1000
@@ -395,10 +419,12 @@ dependencies:
   - xorg-renderproto=0.11.1=h14c3975_1002
   - xorg-xextproto=7.3.0=h14c3975_1002
   - xorg-xproto=7.0.31=h14c3975_1007
-  - xz=5.2.3=0
-  - yaml=0.1.7=0
-  - yarl=1.3.0=py36h14c3975_1000
-  - zlib=1.2.11=h470a237_3
+  - xz=5.2.5=h7b6447c_0
+  - yaml=0.2.5=h7b6447c_0
+  - yarl=1.6.0=py36h7b6447c_0
+  - zipp=3.3.0=py_0
+  - zlib=1.2.11=h7b6447c_3
+  - zstd=1.4.5=h9ceee32_0
   - pip:
     - bleach==3.1.1
     - decorator==4.3.0
@@ -428,6 +454,8 @@ dependencies:
     - nbformat==4.4.0
     - networkx==1.11
     - notebook==5.5.0
+    - numpy==1.18.2
+    - pandas==1.0.3
     - pandocfilters==1.4.2
     - parso==0.2.1
     - pexpect==4.6.0
@@ -435,7 +463,6 @@ dependencies:
     - prompt-toolkit==1.0.16
     - pygments==2.2.0
     - pymongo==3.7.0
-    - pyyaml==5.3
     - pyzmq==17.0.0
     - qtconsole==4.3.1
     - seaborn==0.9.0
@@ -449,5 +476,5 @@ dependencies:
     - webencodings==0.5.1
     - widgetsnbextension==3.2.1
     - xgboost==0.82
-prefix: /home/rylan/miniconda3/envs/acheron
+prefix: /home/bit256/anaconda3/envs/acheron
 

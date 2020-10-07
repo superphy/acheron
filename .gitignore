@@ -9,3 +9,5 @@ __pycache__/
 .snakemake*
 
 .cache*
+
+data/oct2020_envi.yaml
