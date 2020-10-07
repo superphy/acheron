@@ -24,7 +24,8 @@ def make_row(filename, dataset, kmer_length):
     for record in SeqIO.parse(jf_path[:-3], "fasta"):
         # Retrieve the sequence as a string
         kmer_seq = record.seq
-        kmer_seq = kmer_seq._get_seq_str_and_check_alphabet(kmer_seq)
+        kmer_seq = str(kmer_seq)
+        #kmer_seq = kmer_seq._get_seq_str_and_check_alphabet(kmer_seq)
 
         kmer_count = int(record.id)
         if kmer_count>255:

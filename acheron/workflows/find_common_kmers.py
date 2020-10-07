@@ -59,7 +59,8 @@ def parse_fasta(genome, kmer_length, jf_path):
     current_multi_mers = []
     for record in SeqIO.parse(jf_path, "fasta"):
         kmer_seq = record.seq
-        kmer_seq = kmer_seq._get_seq_str_and_check_alphabet(kmer_seq)
+        kmer_seq = str(kmer_seq)
+        #kmer_seq = kmer_seq._get_seq_str_and_check_alphabet(kmer_seq)
         if(len(kmer_seq) == int(kmer_length)):
             current_multi_mers.append(kmer_seq)
     return current_multi_mers

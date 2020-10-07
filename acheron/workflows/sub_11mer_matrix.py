@@ -33,7 +33,8 @@ def make_row(filename, num_cols, col_names):
     for record in SeqIO.parse(thefile, "fasta"):
         # Retrieve the sequence as a string
         kmerseq = record.seq
-        kmerseq = kmerseq._get_seq_str_and_check_alphabet(kmerseq)
+        #kmerseq = kmerseq._get_seq_str_and_check_alphabet(kmerseq)
+        kmerseq = str(kmerseq)
 
         # Retrieve the kmer count as an int
         kmercount = record.id
