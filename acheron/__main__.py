@@ -89,26 +89,26 @@ def parse_arguments():
     test_params = argparse.ArgumentParser(add_help=False)
     test_params.add_argument('-x', '--train', required=True,
                     help="Name of dataset to tests models on")
-    test_params.add_argument('-y', '--test', required=False,
+    test_params.add_argument('-y', '--test', default='none',
                     help="Name of dataset to tests models on, not passing this results sets cv=True")
-    test_params.add_argument('-v', '--validation',
+    test_params.add_argument('-v', '--validation', default='none',
                     help="name of dataset to validate hyperparameters with")
     test_params.add_argument('-f', '--num_features',
                     help="Number of features to keep past feature selection, not passing will skip feature selection")
     # labels required for supervised only
-    test_params.add_argument('-l', '--label',
+    test_params.add_argument('-l', '--label', required=True,
                     help="what labels to base the models on, created by `acheron build label ...` ")
-    test_params.add_argument('--columns', help="subset of columns in label")
+    test_params.add_argument('--columns', default='none',help="subset of columns in label")
     test_params.add_argument('-m', '--model', default='XGB', choices = ['XGB','SVM','ANN','kSNP3'],
                     help="The model you would like to build")
-    test_params.add_argument('-p', '--hyperparam',
+    test_params.add_argument('-p', '--hyperparam', default=False,
                     help="Enable hyperparameter optimizations and nest the cross validations, will use training set to validate hyperparams")
     test_params.add_argument('-a', '--attribute',required=True,
                     help="Which attribute to train the model on (column of label)")
     test_params.add_argument('-t', '--type', required=True,
                     help="which features the model is based on (i.e. 11mer or AMR)")
     test_params.add_argument('--trial', default=1,
-                    help="to run the same test multiple times, change trail number")
+                    help="to run the same test multiple times, change trial number")
     test_params.add_argument('--cv', default=5, help="number of folds in cross validation")
 
     download_params = argparse.ArgumentParser(add_help=False)

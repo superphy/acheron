@@ -1,7 +1,6 @@
 import os
 
 def build_model(arguments):
-
     model_args = ''
     for arg in vars(arguments):
         model_args += " {}={}".format(arg, getattr(arguments,arg))

@@ -20,6 +20,11 @@ def are_equal_mic(mic1, mic2):
     mic1 = re.sub('[<>= ]', '', mic1)
     mic2 = re.sub('[<>= ]', '', mic2)
 
+    if isinstance(mic1,str) and mic1[0]=='.':
+        mic1 = '0'+mic1
+    if isinstance(mic2,str) and mic2[0]=='.':
+        mic2 = '0'+mic2
+
     try:
         mic_float_1 = float(mic1)
     except:
@@ -147,8 +152,9 @@ def merge_antibiogram(df1, df2):
     # other columns after
     mic_first_order = amr_cols + [i for i in merged_df.columns if i not in amr_cols]
 
-    print('\nThe following columns had conflicting data between columns (and the number of removed values):')
-    print(conflicts)
+    if len(conflicts.keys()) > 0:
+        print('\nThe following columns had conflicting data between columns (and the number of removed values):')
+        print(conflicts)
 
     return merged_df.reindex(columns = mic_first_order)
 

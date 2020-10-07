@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import joblib
+import glob
 
 from acheron.workflows import supervised_model
 
@@ -14,7 +16,7 @@ masks = [] # paths to validity masks
 
 # if a dataset has been declared, add it to above paths
 for dataset in ['train','test','validation']:
-    if config[dataset] != 'None':
+    if config[dataset] not in ['None','none']:
         features += ["data/{}/features/{}_matrix.df".format(
             config[dataset],config['type'])]
         labels += ["data/{}/labels/{}.df".format(
@@ -24,19 +26,20 @@ for dataset in ['train','test','validation']:
 
 splits = [] # path to splits df, for when only train is passed
 
-if config['test'] == 'None' and config['validation'] == 'None':
-    for trial in range(config['trials']):
-        splits += ["data/{}/masks/split{}_{}_{}.df".format(
-            config['train'],trial,config['type'],config['label'])]
+if config['test'] == 'none' and config['validation'] == 'none':
+    for trial in range(config['trial']):
+        splits += ["data/{}/masks/split{}_{}_{}_{}xCV.df".format(
+            config['train'],trial,config['type'],config['label'],config['cv'])]
 
-columns =
+print("this needs to be set to build an array of attributes, if multiple or 'all' is passed")
+columns = [config['attribute']]
+trials = [i for i in range(config['trial'])]
 
 rule all:
     input:
-        expand("results/model={}_train={}_test={}_validate={}_feats={}_hyp?={}\
-        ".format(config['model'], config['train'], config['test'],
-        config['validation'],config['num_features'], config['hyperparam'])+
-        '_attribute={atb}.df', atb=columns)
+        expand("results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}".format(
+        config['model'], config['train'], config['test'], config['validation'],
+        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}.df',atb=columns, trl=trials)
 
 rule mask:
     input:
@@ -48,7 +51,7 @@ rule mask:
             label = pd.read_pickle(labels[dataset_num])
 
             mask = supervised_model.make_mask(label, len(splits))
-            mask.to_pickle(output[dataset_num], mask)
+            mask.to_pickle(output[dataset_num])
 
 # splits will only run when cross validating (i.e. test == None)
 rule split_samples:
@@ -57,17 +60,28 @@ rule split_samples:
     output:
         splits
     run:
-        mask = pd.read_pickle(masks[0])
-        for trial in trials#finish this, prob run sequentially to ensure diff seeds
-            split = supervised_model.make_split(config['dataset'], config['cv'], trial)
+        samples = glob.glob("data/{}/wgs/raw/*.fasta".format(config['train']))
 
+        # keep in mind, we only have splits when we are cross validating
+        mask = pd.read_pickle(masks[0])
+        for trial in trials:
+            label_matrix = pd.read_pickle("data/{}/labels/{}.df".format(config['train'],config['label']))
+            split = supervised_model.make_split(label_matrix, mask, config['cv'], samples)
+            split.to_pickle("data/{}/masks/split{}_{}_{}_{}xCV.df".format(
+                config['train'],trial,config['type'],config['label'],config['cv']))
 
 rule build_model:
     input:
-        features+splits
+        features+splits+masks
     output:
-        "results/model={}_train={}_test={}_validate={}_feats={}_hyp?={}".format(
+        "results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}".format(
         config['model'], config['train'], config['test'], config['validation'],
-        config['num_features'], config['hyperparam'])+'_attribute={atb}.df'
+        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}.df'
     threads:
         8
+    run:
+        model, results = supervised_model.make_model(config['model'],config['train'],
+            config['test'],config['validation'],config['label'],config['type'],
+            config['attribute'],config['num_features'],config['hyperparam'],config['cv'],wildcards.trl)
+        joblib.dump(model, output[0].split['.'][0]+'.bst')
+        results.to_pickle(output[0])

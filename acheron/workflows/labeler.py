@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import joblib
+from collections import Counter
 
 def load_metadata(path):
     if path[-4:] == '.csv':
@@ -40,3 +42,26 @@ def get_valid_columns(columns):
             e.g. 'col_1,col_2,col_3'")
 
     return headers
+
+def build_encoder(dataset,name,module):
+    """
+    Loads in a label matrix and for each columns, builds an encoder dict
+    """
+    encoders = {}
+
+    if module == 'MIC':
+        # will load data directly from class ranges yaml
+
+        mic_class_dict = joblib.load("data/label_modules/mic/mic_class_order_dict.pkl")
+
+        for key in mic_class_dict.keys():
+            labels = [i for i in mic_class_dict[key]]
+            encoders[key] = {labels[i] : i for i in range(0, len(labels))}
+    else:
+        label_matrix = pd.read_pickle("data/{}/labels/{}.df".format(dataset, name))
+
+        for key in label_matrix.columns:
+            labels = [i for i in Counter(label_matrix[key]).keys()]
+            encoders[key] = {labels[i] : i for i in range(0, len(labels))}
+
+    return encoders

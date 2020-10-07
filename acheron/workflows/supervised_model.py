@@ -5,6 +5,8 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from collections import Counter
 import math
+import xgboost as xgb
+import pickle
 
 def is_valid_type(val):
     # covers core floats, numpy floating and complex floating
@@ -97,14 +99,140 @@ def make_split(label_matrix, mask, k, samples):
     return split_df
 
 
-def load_data():
+def load_data(dataset_name, label_name, trial, type, num_feats, k):
     """
-    load requested dataset, call to apply masks
+    load requested dataset, mask, and split
     """
+    features = pd.read_pickle("data/{}/features/{}_matrix.df".format(dataset_name, type))
+    labels = pd.read_pickle("data/{}/labels/{}.df".format(dataset_name,label_name))
+    mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))
 
-def make_model():
+    if k!=1:
+        split = pd.read_pickle("data/{}/masks/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,k))
+    else:
+        split = []
+
+    return features, labels, mask, split
+
+def train_model(features, label, model_type):
     """
+    Converts feature and label matrices in a trained model
     """
+    num_classes = len(Counter(label).keys())
+
+    if model_type.upper() in ['XGB', 'XGBOOST']:
+        if num_classes == 2:
+            objective = 'binary:logistic'
+        else:
+            objective = 'multi:softmax'
+
+        # this is is probably going to suck for memory, so lets revist XGBClassifier
+        # if we explode past our ram usage on this step
+        xgb_matrix = xgb.DMatrix(features.values, label, feature_names=features.columns)
+        params = {'objective':objective, 'num_class': num_classes}
+        booster = xgb.train(params, xgb_matrix)
+        return booster
+
+    else:
+        raise Exception("model type {} not defined".format(model_type))
+
+def predict(model, features, model_type):
+    """
+    Takes a model and a feature set, returns an label like array of predictions
+    """
+    if model_type.upper in ['XGB', 'XGBOOST']:
+        xgb_matrix = xgb.DMatrix(features.values, feature_names = features.columns)
+        return [round(i) for i in model.predict(xgb_matrix, validate_features=True)]
+    else:
+        raise Exception("model type {} not defined".format(model_type))
+
+def evaluate_model(predicted, actual, model_type):
+    """
+    Evaluates how well a model did based on direct and off-by-one accuracy, as well as
+    matthews correlation co-effecient
+    """
+    # this df will eventually need all info about the test
+    direct_accuracy  = np.sum([predicted[i]==actual[i] for i in range(len(predicted))])
+    results_df = pd.DataFrame(data = [[direct_accuracy,direct_accuracy]], columns = ['direct','1D'])
+    return results_df
+
+def make_model(model_type,train,test,validation,label_name,type,attribute,num_feats,do_hyp,cv_folds,trial):
+    """
+    Loads data, removes invalid data, splits data, feeds into ML model.
+
+    NOTE: for hyperparameter optimization, the model is trained using the TRAINING set,
+    the hyperparameters are optimized and validated using the VALIDATION set, and the final
+    trained model is tested using the TESTING set. You CANNOT use the testing set anywhere else.
+    You may split the training set for validation by not passing validation.
+
+    Possible configs for NON hyperparameter optimization:
+    train is passed: will cross-validate by splitting into 80% train, 20% test
+    train/test is passed: trains using 100% of train, tests using 100% of test.
+    validation passed: Will throw error, as validation set cant be used.
+
+
+    Possible configs for hyperparameter optimization: (nested cross-validation)
+    train is passed: Splits in 60%-20%-20% for train/validation/testing respectively
+    train/test passed: splits train into 80% train, 20% validation, uses testing set for testing
+    train/validation: splits off training data for testtraining
+    train/test/validation passed: trains on train, validates hyperparams using validation set,
+    testing of the final model is done using the testing set.
+    error if test set is the same as train or validation
+    """
+    with open("data/{}/labels/{}_encoder.pkl".format(train, label_name), 'rb') as unpickler:
+        train_encoder = pickle.load(unpickler)
+
+    if not do_hyp:
+        # for non-nested cross validation
+        if validation not in ['none','None']:
+            raise Exception("Validation set can only be used when doing hyperparameter optimizations")
+        if test == '':
+            # k-fold cv split training set into train and test
+            # x is data, y is labels, splits are which samples belong in each split for each cv
+            # dataset_name, label_name, trial, type, num_feats, k
+            features, labels, mask, split = load_data(train,label_name,trial,type,num_feats,k)
+            for fold in cv_folds:
+                pass
+                # TODO do split stuff here, apply mask, etc
+
+
+        else:
+            # call with supplied train and test
+            # splits in this case will be a matrix of 1's, as there is only 1 fold
+            train_features, train_labels, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,1)
+            test_features, test_labels, test_mask, test_split = load_data(train,label_name,trial,type,num_feats,1)
+
+            print("need to apply masks still")
+            with open("data/{}/labels/{}_encoder.pkl".format(test, label_name), 'rb') as test_unpickler:
+                test_encoder = pickle.load(test_unpickler)
+
+            encoded_train_labels = [train_encoder[attribute][i] for i in train_labels[attribute]]
+            model = train_model(train_features, encoded_train_labels, model_type)
+            predicted = predict(model, features, model_type)
+            encoded_test_labels = [test_encoder[attribute][i] for i in test_labels[attribute]]
+            results = evaluate_model(predicted, encoded_test_labels, model_type)
+
+    else:
+        # for nested cross-validation (hyperparameter optimizations)
+        if test in [train,validation]:
+            raise Exception("You cannot use the testing set for training or validation")
+        if validation == 'none' and test == 'none':
+            #TODO call 3way split, nested cross validation on train
+            pass
+        elif validation == 'none':
+            #TODO split train 80% train, 20% validation, used passed train
+            pass
+        elif test == 'none':
+            #TODO split train 80% train, 20% testing, use passed validation
+            pass
+        else:
+            # All datasets passed
+            if train == validation:
+                raise Exception("Same dataset used for training and validation, to split training set for validation, do not pass --validation")
+            #TODO do no splitting, call for model execution
+            pass
+
+    return model, results
 
 if __name__ == "__main__":
     """

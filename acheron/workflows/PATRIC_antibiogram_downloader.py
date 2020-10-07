@@ -32,7 +32,7 @@ def filter_df(df, pathogen, antimicrobials):
 
     abx_counts = Counter(df['antibiotic'].values)
     unused_abx = [i for i in abx_counts.keys() if i not in antimicrobials]
-    print("Skipping the following antimicrobials because they were not requested (and how many times they are seen):")
+    print("\nSkipping the following antimicrobials because they were not requested (and how many times they are seen):")
 
     print(["{} ({})".format(i, abx_counts[i]) for i in unused_abx])
 
@@ -131,14 +131,12 @@ def add_metadata(amr_df, metadata_df):
     """
     Adds the extra information in the metadata tsv into the amr df
     """
-    print(amr_df.columns)
-    print(metadata_df.columns)
     merged_df = amr_df.merge(metadata_df, on=['genome_id','genome_name','taxon_id'], how='left')
     return merged_df
 
 def download_PATRIC(pathogen, antimicrobials):
     pull_PATRIC_ftp()
-    
+
     # load the data, filter out unwanted pathogens and antimicrobials
     amr_df = pd.read_csv("data/PATRIC_genomes_AMR.txt", delimiter='\t',low_memory=False, dtype=str)
     df = filter_df(amr_df, pathogen, antimicrobials)

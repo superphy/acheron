@@ -4,6 +4,8 @@ import logging
 import pickle
 import yaml
 
+import os,sys
+
 from mic import MICPanel
 from acheron.workflows import labeler
 
@@ -16,6 +18,13 @@ def transform(input, log, output,
     logging.info('MIC binning')
 
     micsdf = labeler.load_metadata(input[0])
+
+    if slice_cols[0] == 'all':
+        key = slice_cols[1]
+        all_seen_cols = micsdf.columns
+        all_seen_mic = [i for i in all_seen_cols if 'MIC' in i]
+
+        slice_cols = [key]+all_seen_mic
 
     micsdf = micsdf[slice_cols]
     micsdf = micsdf.set_index(config['key'])
@@ -66,13 +75,15 @@ def transform(input, log, output,
 
         cfile = output[0]
         cofile = output[1]
+
         c.to_pickle(cfile)
         pickle.dump(class_orders, open(cofile, "wb"))
 
 
 rule all:
   input:
-    "data/{}/labels/{}.df".format(config['dataset'],config['name'])
+    "data/{}/labels/{}.df".format(config['dataset'],config['name']),
+    "data/label_modules/mic/mic_class_order_dict.pkl"
 
 rule make_mic_df:
     input:
@@ -84,6 +95,9 @@ rule make_mic_df:
         "data/{}/labels/{}.df".format(config['dataset'],config['name']),
         "data/label_modules/mic/mic_class_order_dict.pkl"
     run:
-        headers = labeler.get_valid_columns(config['columns'])
-        headers = np.concatenate([headers, [config['key']]])
+        if config['columns'].lower() == 'all':
+            headers =['all',config['key']]
+        else:
+            headers = labeler.get_valid_columns(config['columns'])
+            headers = np.concatenate([headers, [config['key']]])
         transform(input, log, output, slice_cols=headers)

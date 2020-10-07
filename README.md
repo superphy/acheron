@@ -7,6 +7,7 @@ machine learning and dataprocessing workflows for genomic analyses
 This repository is under active development, see wiki for instructions.
 
 Modules currently working:
+- Download antibiogram data from different databases and merge them
 - build kmer count matrix for k <= 11
 - build kmer count matrix for k > 11
 - build custom labels
