@@ -80,8 +80,9 @@ rule build_model:
     threads:
         8
     run:
-        model, results = supervised_model.make_model(config['model'],config['train'],
+        model, predicted, summary = supervised_model.make_model(config['model'],config['train'],
             config['test'],config['validation'],config['label'],config['type'],
             config['attribute'],config['num_features'],config['hyperparam'],config['cv'],wildcards.trl)
-        joblib.dump(model, output[0].split['.'][0]+'.bst')
-        results.to_pickle(output[0])
+
+        joblib.dump(model, output[0].split('.')[0]+'.bst')
+        summary.to_pickle(output[0])

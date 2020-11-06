@@ -17,6 +17,9 @@ from .download import download_genomes
 
 from .model import build_model
 
+from .annotate import annotate_genomes
+from .annotate import identify_important_regions
+
 # Result Functions
 # TODO
 
@@ -55,6 +58,13 @@ def main():
 
         else:
             raise argparse.ArgumentError(arguments.build_command, "acheron build requires another positional argument from the list above")
+
+    # Annotation Caller
+    elif arguments.action_command == 'annotate':
+        annotate_genomes(arguments.dataset, arguments.cores)
+
+    elif arguments.action_command == 'identify':
+        identify_important_regions(arguments)
 
     # Result Caller
     elif arguments.action_command == 'result':
@@ -120,7 +130,7 @@ def parse_arguments():
     root_parser = argparse.ArgumentParser()
 
     action_subparsers = root_parser.add_subparsers(title='action', dest='action_command',
-                    help="What action you would like to take in ['build','result','summary','download']")
+                    help="What action you would like to take in ['build','result','annotate','identify','summary','download']")
 
     # Download subparser
     download_parser = action_subparsers.add_parser('download',
@@ -180,6 +190,21 @@ def parse_arguments():
                     help="For building machine learning models")
     model_parser.add_argument('-k', '--folds', default = 5,
                     help="How many folds for k fold cross validation, default=5")
+
+    # Annotate subparser
+    # takes same arguments as model builder, analyses results instead of builds model
+    annotate_parser = action_subparsers.add_parser('annotate', parents=[parent_parser],
+                    help="annotates whole-genome sequences")
+    annotate_parser.add_argument('-d', '--dataset', required = True,
+                    help="Name of dataset, what the name of the folder containing sequences is named")
+
+    # Identify subparser
+    # takes same arguments as model builder, analyses results instead of builds model
+    identify_parser = action_subparsers.add_parser('identify', parents=[parent_parser,test_params],
+                    help="Identifies important regions as determined by a trained model")
+    identify_parser.add_argument("--num_top", default=5,
+                    help="How many of the top features to search for")
+
     # Result Subparser
     # need to specify each parameter, for a single model
     result_parser = action_subparsers.add_parser('result', parents=[parent_parser,test_params],
@@ -200,6 +225,10 @@ def parse_arguments():
             build_parser.print_help(sys.stderr)
         elif args.action_command == 'result':
             result_parser.print_help(sys.stderr)
+        elif args.action_command == 'annotate':
+            annotate_parser.print_help(sys.stderr)
+        elif args.action_command == 'identify':
+            identify_parser.print_help(sys.stderr)
         elif args.action_command == 'summary':
             summary_parser.print_help(sys.stderr)
         elif args.action_command == 'download':

@@ -3,10 +3,12 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
+from sklearn.feature_selection import SelectKBest, f_classif
 from collections import Counter
 import math
 import xgboost as xgb
 import pickle
+import sys, os
 
 def is_valid_type(val):
     # covers core floats, numpy floating and complex floating
@@ -21,7 +23,7 @@ def is_valid_type(val):
         return True
     # covers core and np strings, excludes unicode
     elif isinstance(val, (str, np.str_)):
-        if val == 'invalid':
+        if val.upper() in ['INVALID', 'NAN']:
             return False
         else:
             return True
@@ -99,18 +101,20 @@ def make_split(label_matrix, mask, k, samples):
     return split_df
 
 
-def load_data(dataset_name, label_name, trial, type, num_feats, k):
+def load_data(dataset_name, label_name, trial, type, num_feats, k, attribute):
     """
     load requested dataset, mask, and split
     """
     features = pd.read_pickle("data/{}/features/{}_matrix.df".format(dataset_name, type))
-    labels = pd.read_pickle("data/{}/labels/{}.df".format(dataset_name,label_name))
-    mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))
+    labels = pd.read_pickle("data/{}/labels/{}.df".format(dataset_name,label_name))[attribute]
+    mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))[attribute]
 
     if k!=1:
         split = pd.read_pickle("data/{}/masks/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,k))
     else:
         split = []
+
+    features, labels = apply_mask(features, labels, mask)
 
     return features, labels, mask, split
 
@@ -128,8 +132,10 @@ def train_model(features, label, model_type):
 
         # this is is probably going to suck for memory, so lets revist XGBClassifier
         # if we explode past our ram usage on this step
+
         xgb_matrix = xgb.DMatrix(features.values, label, feature_names=features.columns)
-        params = {'objective':objective, 'num_class': num_classes}
+        #params = {'objective':objective, 'num_class': num_classes}
+        params = {'objective':objective}
         booster = xgb.train(params, xgb_matrix)
         return booster
 
@@ -140,7 +146,7 @@ def predict(model, features, model_type):
     """
     Takes a model and a feature set, returns an label like array of predictions
     """
-    if model_type.upper in ['XGB', 'XGBOOST']:
+    if model_type.upper() in ['XGB', 'XGBOOST']:
         xgb_matrix = xgb.DMatrix(features.values, feature_names = features.columns)
         return [round(i) for i in model.predict(xgb_matrix, validate_features=True)]
     else:
@@ -152,9 +158,88 @@ def evaluate_model(predicted, actual, model_type):
     matthews correlation co-effecient
     """
     # this df will eventually need all info about the test
-    direct_accuracy  = np.sum([predicted[i]==actual[i] for i in range(len(predicted))])
+    direct_accuracy  = np.sum([predicted[i]==actual[i] for i in range(len(predicted))])/len(predicted)
     results_df = pd.DataFrame(data = [[direct_accuracy,direct_accuracy]], columns = ['direct','1D'])
     return results_df
+
+def apply_mask(features, labels, mask):
+    """
+    Takes in a pandas dataframe or series with a mask
+    and returns only valid samples
+    Mask series looks like:
+                    AMC
+    BioSample
+    SAMN00000001    False
+    SAMN00000002    True
+    """
+    # its important to note that the mask is for everything in the label df, but
+    # when we mask the features, that df might not have it
+    # therefore we reduce the mask to samples that are seen
+    seen = list(features.index)
+
+    mask = mask[[i in seen for i in mask.index]]
+    labels = labels[[i in seen for i in labels.index]]
+
+    # reorder dataframes to make sure they are in the same order as the features
+    mask = mask.reindex(seen)
+    labels = labels.reindex(seen)
+
+    # remove samples that we dont have data for
+    # (these appear as nans in the mask)
+    mask = pd.Series(index = mask.index,
+        data = [False if np.isnan(i) else i for i in mask])
+
+    # double check that the mask biosample order matches the feature biosample order
+    for i, biosample in enumerate(mask.index):
+        assert biosample == seen[i]
+
+    if isinstance(features, pd.Series) or isinstance(features, pd.DataFrame):
+        labels = labels[list(mask)]
+        features = features[list(mask)]
+
+    else:
+        raise Exception("Masking of type {} is not defined".format(type(df)))
+
+    return features, labels
+
+def select_features(features, labels, num_feats, pre_selection):
+    """
+    Reduces feature matrix down to the top num_feats features,
+    returns filtered feature matrix
+
+    If an array of features if provided in pre_selection,
+    returns matrix with only columns that match pre_selection, and in that order
+    """
+    # we are choosing the top features
+    if isinstance(pre_selection, bool) and pre_selection == False:
+        # save the non values, which are lost in SelectKBest
+        indeces = features.index
+        cols = features.columns
+
+        sk_obj = SelectKBest(f_classif, k=num_feats)
+
+        # reduce features to top x features
+        features = sk_obj.fit_transform(features,labels)
+
+        # remove the columns that were removed from features,
+        # this needs to be saved for when we filter the testing set
+        cols = sk_obj.transform([cols])[0]
+
+        features = pd.DataFrame(data=features,columns=cols,index=indeces)
+
+        return features
+
+    else:
+        # we are using pre-determined features
+        # needs to be list or pandas.columns
+        assert isinstance(pre_selection, list) or isinstance(pre_selection, pd.core.indexes.base.Index)
+
+        # Only keep important data (this also reorders)
+        features = features[pre_selection]
+
+        return features
+
+
 
 def make_model(model_type,train,test,validation,label_name,type,attribute,num_feats,do_hyp,cv_folds,trial):
     """
@@ -183,7 +268,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
         train_encoder = pickle.load(unpickler)
 
     if not do_hyp:
-        # for non-nested cross validation
+        # for non-nested cross validation[attribute]
         if validation not in ['none','None']:
             raise Exception("Validation set can only be used when doing hyperparameter optimizations")
         if test == '':
@@ -198,19 +283,24 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
 
         else:
             # call with supplied train and test
-            # splits in this case will be a matrix of 1's, as there is only 1 fold
-            train_features, train_labels, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,1)
-            test_features, test_labels, test_mask, test_split = load_data(train,label_name,trial,type,num_feats,1)
+            # splits in this case will be a matrix of 1's, as there is only 1 fold[attribute]
+            train_features, train_labels, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,1,attribute)
+            test_features, test_labels, test_mask, test_split = load_data(train,label_name,trial,type,num_feats,1,attribute)
 
-            print("need to apply masks still")
             with open("data/{}/labels/{}_encoder.pkl".format(test, label_name), 'rb') as test_unpickler:
                 test_encoder = pickle.load(test_unpickler)
 
-            encoded_train_labels = [train_encoder[attribute][i] for i in train_labels[attribute]]
+            encoded_train_labels = [train_encoder[attribute][i] for i in train_labels]
+
+            # reduce to top features
+            train_features = select_features(train_features, train_labels, num_feats, False)
+            test_features = select_features(test_features,'dont need',num_feats, train_features.columns)
+
             model = train_model(train_features, encoded_train_labels, model_type)
-            predicted = predict(model, features, model_type)
-            encoded_test_labels = [test_encoder[attribute][i] for i in test_labels[attribute]]
-            results = evaluate_model(predicted, encoded_test_labels, model_type)
+            predicted = predict(model, test_features, model_type)
+            encoded_test_labels = [test_encoder[attribute][i] for i in test_labels]
+            summary = evaluate_model(predicted, encoded_test_labels, model_type)
+
 
     else:
         # for nested cross-validation (hyperparameter optimizations)
@@ -232,7 +322,8 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             #TODO do no splitting, call for model execution
             pass
 
-    return model, results
+    # if the features are not included in a model, they need to be included somewhere
+    return model, predicted, summary
 
 if __name__ == "__main__":
     """

@@ -108,3 +108,29 @@ Finished job 0.
 2 of 2 steps (100%) done
 
 # build model
+[IN]$ acheron build model --model 'XGB' --label PATRIC_and_NCBI --train ncbi_salm --test ncbi_salm_copy -f 1000 -a AMP --type 11mer
+
+[OUT]
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	all
+	1	mask
+	1	build_model
+	3
+
+
+
+# annotate features (this will happen automatically if try to identify important regions of the genome)
+[IN]$ acheron annotate -d ncbi_salm -c 8
+
+[OUT]
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	all
+	4	prokka
+	4	prokka_to_dataframe
+	9
