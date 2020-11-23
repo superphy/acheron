@@ -233,6 +233,18 @@ def download_antibiogram(database, pathogen, email, antimicrobial, path, use_loc
     df.to_csv(path)
 
 
-def download_genomes(input, output):
-    print('genome download not yet setup')
-    print("Downloading genomes missing from {} but found in {}".format(output, input))
+def download_genomes(databases, output, pathogen):
+
+    # these datasheet might need to be loaded using something other
+    # than biosample numbers, depending on how PATRICS ftp server
+    # operates
+    for database in databases:
+        if database.upper() == 'NCBI':
+            os.system("snakemake -s acheron/workflows/NCBI_sequence_downloader.smk -j 1 --config databases={} out={} pathogen={}".format(
+                '_'.join(databases),output,pathogen))
+
+        elif database.upper() == 'PATRIC':
+            # TODO
+            pass
+        else:
+            raise Exception("Database {} not yet setup for sequence download".format(database))

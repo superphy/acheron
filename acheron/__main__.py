@@ -79,7 +79,7 @@ def main():
         if arguments.download_command == 'antibiogram':
             download_antibiogram(arguments.database, arguments.pathogen, arguments.email, arguments.antimicrobial, arguments.path, arguments.use_local, arguments.check_date)
         elif arguments.download_command == 'genomes':
-            download_genomes(arguments.input, arguments.output)
+            download_genomes(arguments.database, arguments.output, arguments.pathogen)
         else:
             raise argparse.ArgumentError(arguments.download_command, "Only downloading genomes and antibiogram data is supported right now")
 
@@ -149,9 +149,10 @@ def parse_arguments():
                     help="checks the date the antibiograms were pulled")
     # add a use_local path
 
-    genome_parser = download_subparsers.add_parser('genomes', help="For downloading missing genomes" )
-    genome_parser.add_argument('--input', help="Path to antibiogram sheet containing biosamples", required=True)
+    genome_parser = download_subparsers.add_parser('genomes', help="For downloading missing genomes",parents=[download_params])
+    #genome_parser.add_argument('--input', help="Path to antibiogram sheet containing biosamples", required=True)
     genome_parser.add_argument('--output', help="Location to save to and check for pre-existing genomes", required=True)
+
 
     # Build Subparser
     build_parser = action_subparsers.add_parser('build',
