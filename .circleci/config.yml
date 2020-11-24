@@ -7,10 +7,10 @@ jobs:
       steps:
         - checkout
         - run:
-            no_output_timeout: 30m
             command: |
-              conda env create -f data/envi.yaml
+              conda create -n acheron python=3.7.9 anaconda
               source activate acheron
+              conda env update --file data/envi.yaml
               pip install -e .
               pytest tests
 
