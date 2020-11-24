@@ -1,8 +1,8 @@
 name: acheron
 channels:
   - bioconda
-  - conda-forge
   - anaconda
+  - conda-forge
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
@@ -27,14 +27,15 @@ dependencies:
   - biopython=1.78=py36h7b6447c_0
   - blas=1.0=mkl
   - blast=2.7.1=boost1.64_3
+  - blosc=1.20.1=he1b5a44_0
   - boost=1.64.0=py36_4
   - boost-cpp=1.64.0=1
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2020.10.14=0
+  - ca-certificates=2020.11.8=ha878542_0
   - cachecontrol=0.12.6=py_0
   - cairo=1.14.12=he6fea26_5
   - cd-hit=4.6.8=0
-  - certifi=2020.6.20=py36_0
+  - certifi=2020.11.8=py36h5fab9bb_0
   - cffi=1.14.3=py36h261ae71_2
   - chardet=3.0.4=py36h06a4308_1003
   - click=7.1.2=py_0
@@ -70,7 +71,7 @@ dependencies:
   - gxx_impl_linux-64=7.3.0=hdf63c60_1
   - gxx_linux-64=7.3.0=h553295d_9
   - harfbuzz=1.9.0=h08d66d9_0
-  - hdf5=1.10.7=hb1b8bf9_0
+  - hdf5=1.10.6=nompi_h3c11f04_101
   - hdmedians=0.14.1=py36hdd07704_0
   - hmmer=3.2=hfc679d8_3
   - html5lib=0.9999999=py36_0
@@ -119,16 +120,17 @@ dependencies:
   - libxslt=1.1.34=hc22bd24_0
   - lockfile=0.12.2=py36_0
   - lz4-c=1.9.2=heb0550a_3
+  - lzo=2.10=h516909a_1000
   - mafft=7.313=1
   - markdown=3.3.3=py36h06a4308_0
   - markupsafe=1.1.1=py36h7b6447c_0
-  - matplotlib-base=3.3.2=py36h817c723_0
   - mcl=14.137=h470a237_3
   - minced=0.3.2=0
   - mkl=2020.2=256
   - mkl-service=2.3.0=py36he904b0f_0
   - mkl_fft=1.2.0=py36h23d657b_0
   - mkl_random=1.1.1=py36h0573a6f_0
+  - mock=4.0.2=py36h9f0ad1d_1
   - more-itertools=8.6.0=pyhd3eb1b0_0
   - msgpack-python=1.0.0=py36hfd86e86_1
   - multidict=4.7.6=py36h7b6447c_1
@@ -137,11 +139,11 @@ dependencies:
   - ncurses=5.9=10
   - nettle=3.3=0
   - nose=1.3.7=py36_2
-  - numpy-base=1.19.2=py36hfa32c7d_0
+  - numexpr=2.7.1=py36h7c3b610_3
   - olefile=0.46=py36_0
   - openjdk=8.0.152=h7b6447c_3
   - openpyxl=3.0.5=py_0
-  - openssl=1.0.2u=h7b6447c_0
+  - openssl=1.0.2u=h516909a_0
   - packaging=20.4=py_0
   - pango=1.40.14=hf0c64fd_1003
   - parallel=20180522=0
@@ -361,7 +363,6 @@ dependencies:
   - psutil=5.7.2=py36h7b6447c_0
   - ptyprocess=0.6.0=pyhd3eb1b0_2
   - py=1.9.0=py_0
-  - py-xgboost=0.90=py36he6710b0_1
   - pyasn1=0.4.8=py_0
   - pycparser=2.20=py_2
   - pycrypto=2.6.1=py36h7b6447c_10
@@ -370,6 +371,7 @@ dependencies:
   - pyparsing=2.4.7=py_0
   - pyqt=4.11.4=py36_3
   - pysftp=0.2.9=py_1
+  - pytables=3.6.1=py36hd57f836_3
   - pytest=6.1.1=py36_0
   - python=3.6.5=1
   - python-dateutil=2.8.1=py_0
