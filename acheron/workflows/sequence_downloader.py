@@ -14,7 +14,8 @@ def find_seq_sources(dfs):
         if df_name.upper() == 'NCBI':
             sources[df_name] = dfs[df_name]['BioSample']
         elif df_name.upper() == 'PATRIC':
-            sources[df_name] = dfs[df_name]['biosample_accession']
+            #sources[df_name] = dfs[df_name]['biosample_accession']
+            sources[df_name] = dfs[df_name]['BioSample']
         else:
             raise Exception("key not set for database {}".format(df_name))
 
