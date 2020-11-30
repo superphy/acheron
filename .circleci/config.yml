@@ -8,6 +8,7 @@ jobs:
         - checkout
         - run:
             command: |
+              conda update conda
               conda env create -f data/envi.yaml
               source activate ach.0.3
               pip install -e .
