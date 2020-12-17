@@ -10,8 +10,10 @@ def annotate_genomes(dataset, cores):
 
 def identify_important_regions(arguments):
     # First call the annotate snakemake, to make sure the genomes are annotated
-    dataset = getattr(arguments,'dataset')
+    dataset = getattr(arguments,'train')
     cores = getattr(arguments,'cores')
+
+    smk = "acheron/workflows/annotate_genomes.smk"
 
     os.system("snakemake -s {0} -j {1} --config dataset={2} cores={1}".format(
     smk, cores, dataset))

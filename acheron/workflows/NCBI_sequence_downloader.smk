@@ -3,6 +3,8 @@ import os, sys
 import pandas as pd
 import numpy as np
 
+import click
+
 from acheron.workflows import sequence_downloader
 
 databases = config['databases']
@@ -21,7 +23,12 @@ dl_lists = sequence_downloader.download_sources(seq_sources)
 #List of ids to be downloaded
 ids = list(dl_lists['NCBI'])
 
-# THIS SECTION DISABLED FOR SLURM COMPATABILITY
+# THIS SECTION DEFAULTS YES AND SKIPS FOR SLURM COMPATABILITY
+if not click.confirm("You are about to download {} sequences from the NCBI, would you like to continue? (y/n)".format(len(ids)),
+    default = True):
+    print("Exiting download at user request")
+    sys.exit()
+"""
 user_input = ''
 while user_input.upper() not in ['Y','N','YES','NO','YE']:
     print("You are about to download {} sequences from the NCBI, would you like to continue? (y/n)".format(len(ids)))
@@ -29,7 +36,7 @@ while user_input.upper() not in ['Y','N','YES','NO','YE']:
 
 if user_input.upper() in ['NO','N']:
     sys.exit()
-
+"""
 
 # Path where you want the assemblies to be saved
 ASMBL = output_path+'/'

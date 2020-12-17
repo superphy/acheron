@@ -4,14 +4,16 @@ import numpy as np
 from acheron.workflows import sequence_downloader
 
 def test_find_seq_source():
+    # NCBI
     df1 = pd.DataFrame(
         data=[['SAMN02640809','4','2'],
               ['SAMN02367860','8','16']],
         columns=['BioSample','MICA','MICB'])
+    # PATRIC
     df2 = pd.DataFrame(
         data=[['SAMN02640806','4','2'],
               ['SAMN02640792','8','16']],
-        columns=['BioSample','MICA','MICB'])
+        columns=['biosample_accession','MICA','MICB'])
 
     df_dict = {'NCBI':df1,'PATRIC':df2}
 
@@ -23,14 +25,16 @@ def test_find_seq_source():
     assert list(seq_sources['PATRIC']) == ['SAMN02640806','SAMN02640792']
 
 def test_download_sources():
+    # NCBI
     df1 = pd.DataFrame(
         data=[['SAMN02640809','4','2'],
               ['SAMN02367860','8','16']],
         columns=['BioSample','MICA','MICB'])
+    # PATRIC
     df2 = pd.DataFrame(
         data=[['SAMN02640806','4','2'],
               ['SAMN02367860','8','16']],
-        columns=['BioSample','MICA','MICB'])
+        columns=['biosample_accession','MICA','MICB'])
 
     df_dict = {'NCBI':df1,'PATRIC':df2}
 

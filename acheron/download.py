@@ -239,12 +239,8 @@ def download_genomes(databases, output, pathogen):
     # than biosample numbers, depending on how PATRICS ftp server
     # operates
     for database in databases:
-        if database.upper() == 'NCBI':
-            os.system("snakemake -s acheron/workflows/NCBI_sequence_downloader.smk -j 1 --config databases={} out={} pathogen={}".format(
-                '_'.join(databases),output,pathogen))
-
-        elif database.upper() == 'PATRIC':
-            # TODO
-            pass
+        if database.upper() in ['NCBI','PATRIC']:
+            os.system("snakemake -s acheron/workflows/{}_sequence_downloader.smk -j 1 --config databases={} out={} pathogen={}".format(
+                database.upper(),'_'.join(databases),output,pathogen))
         else:
             raise Exception("Database {} not yet setup for sequence download".format(database))
