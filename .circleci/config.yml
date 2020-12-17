@@ -10,7 +10,7 @@ jobs:
             command: |
               conda update conda
               conda env create -f data/envi.yaml
-              source activate acheron
+              source activate ach.0.3
               pip install -e .
               pytest tests
 

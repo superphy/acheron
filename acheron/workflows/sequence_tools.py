@@ -37,7 +37,7 @@ def make_master_fasta(dataset):
                 fh.write("\n")
 
 
-def find_top_feats(model, model_type, n):
+def find_top_feats(model, features, model_type, n):
     """
     Returns a list of tuples of the top n features from a model and their
     relative importance in the form [(feature, importance)]
@@ -45,10 +45,20 @@ def find_top_feats(model, model_type, n):
 
     # For XGBoost objects
     if model_type.upper() in ['XGB', 'XGBOOST']:
-        feats = Counter(model.get_score(importance_type='gain')).most_common(n)
-        feats.sort(key=lambda i: i[1], reverse=True)
+        imps = Counter(model.get_score(importance_type='gain')).most_common(n)
+        imps.sort(key=lambda i: i[1], reverse=True)
 
-        return feats
+        # dict to convert default feat names "f001" to "AAACTTC"
+        feat_dict = {}
+        for i in range(len(features)):
+            feat_dict['f'+str(i)] = features[i]
+
+        # replace left column of tuple
+        labeled_imps = []
+        for f,v in imps:
+            labeled_imps.append([feat_dict[f],v])
+
+        return labeled_imps
 
     else:
         raise Exception("Model type {} not supported for feature extraction".format(model_type))

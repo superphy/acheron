@@ -3,6 +3,9 @@ from acheron.workflows import sequence_tools
 import joblib
 from collections import Counter
 
+import xgboost as xgb
+import numpy as np
+
 def test_find_top_feats():
     """
     importances of test booster look like:
@@ -16,9 +19,11 @@ def test_find_top_feats():
     }
     """
 
-    bst = joblib.load("data/acheron_test_samples/test.bst")
+    bst = xgb.Booster({'nthread': 1})
+    bst.load_model("data/acheron_test_samples/test.bst")
+    feats = np.load("data/acheron_test_samples/feats.npy")
 
-    importances = sequence_tools.find_top_feats(bst,'xgb',3)
+    importances = sequence_tools.find_top_feats(bst,feats,'xgb',3)
 
     assert len(importances)==3
     assert abs((1 - (importances[0][1] / 5.70540)))<0.0001
@@ -26,8 +31,11 @@ def test_find_top_feats():
     assert abs((1 - (importances[2][1] / 2.35295)))<0.0001
 
 def test_save_query():
-    bst = joblib.load("data/acheron_test_samples/test.bst")
-    importances = sequence_tools.find_top_feats(bst,'xgb',3)
+    bst = xgb.Booster({'nthread': 1})
+    bst.load_model("data/acheron_test_samples/test.bst")
+    feats = np.load("data/acheron_test_samples/feats.npy")
+    importances = sequence_tools.find_top_feats(bst,feats,'xgb',3)
+
     path = "data/acheron_test_samples/test.query"
 
     sequence_tools.save_query(importances, path)
