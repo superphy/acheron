@@ -5,6 +5,7 @@ from collections import Counter
 
 import xgboost as xgb
 import numpy as np
+import pandas as pd
 
 def test_find_top_feats():
     """
@@ -50,6 +51,11 @@ def test_save_query():
 
 # dont add this to circleci
 def test_biosamples_to_genomeids():
+    try:
+        pd.read_csv("data/PATRIC_Salmonella_antibiogram.csv")
+    except:
+        pytest.skip("Skipping test that requires AMR data")
+
     biosamples = ['SAMN02640950','SAMN02699189','SAMN03894094','SAMN02911931']
 
     ids = sequence_tools.biosamples_to_genomeids(biosamples, 'Salmonella')
