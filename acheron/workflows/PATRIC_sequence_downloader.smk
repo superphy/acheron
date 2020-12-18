@@ -26,8 +26,12 @@ biosamples = list(dl_lists['PATRIC'])
 biosamples = [i for i in biosamples if len(str(i)) > 1]
 
 # THIS SECTION DEFAULTS YES AND SKIPS FOR SLURM COMPATABILITY
-if not click.confirm("You are about to download {} sequences from PATRIC, would you like to continue? (y/n)".format(len(biosamples)),
-    default = True):
+try:
+    cont = click.confirm("You are about to download {} sequences from the PATRIC, would you like to continue?".format(len(biosamples)),
+        default = True)
+except:
+    cont = True
+if not cont:
     print("Exiting download at user request")
     sys.exit()
 

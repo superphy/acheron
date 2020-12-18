@@ -24,8 +24,12 @@ dl_lists = sequence_downloader.download_sources(seq_sources)
 ids = list(dl_lists['NCBI'])
 
 # THIS SECTION DEFAULTS YES AND SKIPS FOR SLURM COMPATABILITY
-if not click.confirm("You are about to download {} sequences from the NCBI, would you like to continue? (y/n)".format(len(ids)),
-    default = True):
+try:
+    cont = click.confirm("You are about to download {} sequences from the NCBI, would you like to continue?".format(len(ids)),
+        default = True)
+except:
+    cont = True
+if not cont:
     print("Exiting download at user request")
     sys.exit()
 """
