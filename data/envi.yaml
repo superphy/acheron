@@ -47,7 +47,7 @@ dependencies:
   - ca-certificates=2020.12.5=ha878542_0
   - cached-property=1.5.1=py_0
   - cairo=1.14.12=h80bd089_1005
-  - certifi=2020.12.5=py37h89c1867_0
+  - certifi=2020.12.5=py37h89c1867_1
   - cffi=1.14.4=py37hc58025e_1
   - chardet=4.0.0=py37h89c1867_0
   - charls=2.1.0=h9c3ff4c_2
@@ -113,7 +113,7 @@ dependencies:
   - intel-openmp=2020.2=254
   - intervaltree=3.0.2=py_0
   - ipykernel=5.4.2=py37h888b3d9_0
-  - ipython=7.19.0=py37h888b3d9_0
+  - ipython=7.19.0=py37h888b3d9_2
   - ipython_genutils=0.2.0=py_1
   - ipywidgets=7.5.1=pyh9f0ad1d_1
   - isort=5.6.4=py_0
