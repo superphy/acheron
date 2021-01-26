@@ -47,7 +47,7 @@ ASMBL = output_path+'/'
 
 rule all:
      input:
-        expand(ASMBL+"{id}/{id}.fasta", id=ids)
+        expand(ASMBL+"{id}.fasta", id=ids)
 
 # Get input file list
 rule ncbi_fna_list:
@@ -69,18 +69,27 @@ rule ncbi_dl:
     input:
         ASMBL+"{id}_esearch.txt"
     output:
-        temp(ASMBL+"{id}/{id}.fna.gz")
+        comp = temp(ASMBL+"{id}/{id}.fna.gz")
     shell:
         "wget -O {output} -i {input}"
 
 
-rule unzip_mv:
+rule unzip:
     input:
         ASMBL+"{id}/{id}.fna.gz"
     output:
-        ASMBL+"{id}/{id}.fasta"
+        ASMBL+"{id}/{id}.fna"
+    shell:
+        "gunzip {input}"
+
+rule move:
+    input:
+        ASMBL+"{id}/{id}.fna"
+        #dir = ASMBL+"{id}"
+    output:
+        ASMBL+"{id}.fasta"
     shell:
         """
-        gunzip {input}
         mv {input} {output}
         """
+# rm -r {input.dir}

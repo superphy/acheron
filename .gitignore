@@ -16,3 +16,5 @@ data/oct2020_envi.yaml
 test_patric_dl/*
 
 slurm-*.out
+
+test.fasta

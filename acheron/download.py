@@ -240,7 +240,7 @@ def download_genomes(databases, output, pathogen):
     # operates
     for database in databases:
         if database.upper() in ['NCBI','PATRIC']:
-            os.system("snakemake -s acheron/workflows/{}_sequence_downloader.smk -j 1 --config databases={} out={} pathogen={}".format(
+            os.system("snakemake -k -s acheron/workflows/{}_sequence_downloader.smk -j 1 --config databases={} out={} pathogen={}".format(
                 database.upper(),'_'.join(databases),output,pathogen))
         else:
             raise Exception("Database {} not yet setup for sequence download".format(database))

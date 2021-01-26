@@ -31,7 +31,7 @@ if config['test'] == 'none' and config['validation'] == 'none':
         splits += ["data/{}/masks/split{}_{}_{}_{}xCV.df".format(
             config['train'],trial,config['type'],config['label'],config['cv'])]
 
-print("this needs to be set to build an array of attributes, if multiple or 'all' is passed")
+#print("this needs to be set to build an array of attributes, if multiple or 'all' is passed")
 columns = [config['attribute']]
 trials = [i for i in range(config['trial'])]
 
@@ -76,13 +76,17 @@ rule build_model:
     output:
         "results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}".format(
         config['model'], config['train'], config['test'], config['validation'],
-        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}.df'
+        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}/summary.df'
     threads:
         8
     run:
-        model, predicted, summary = supervised_model.make_model(config['model'],config['train'],
+        model, predicted_df, summary, prec_recall = supervised_model.make_model(config['model'],config['train'],
             config['test'],config['validation'],config['label'],config['type'],
-            config['attribute'],config['num_features'],config['hyperparam'],config['cv'],wildcards.trl)
+            config['attribute'],config['num_features'],config['hyperparam'],
+            config['cv'],wildcards.trl)
 
-        joblib.dump(model, output[0].split('.')[0]+'.bst')
-        summary.to_pickle(output[0])
+        out_dir = '/'.join(output[0].split('/')[:-1])
+        joblib.dump(model, out_dir+'/model.joblib')
+        predicted_df.to_pickle(out_dir+"/predictions.df")
+        prec_recall.to_pickle(out_dir+"/precision_recall_fscore_support.df")
+        summary.to_pickle(out_dir+"/summary.df")

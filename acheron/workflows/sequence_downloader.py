@@ -37,16 +37,21 @@ def download_sources(seq_sources):
     # dont end up downloading the same sequence twice.
     for database in seq_sources.keys():
         for sample in seq_sources[database]:
-            if sample in downloaded:
-                # dont include, already attributed to a database
-                pass
-            else:
-                # record we are applying it to this database
-                downloaded.append(sample)
+            # we want to skip anything not starting SAMN, to exclude things like NaN
+            try:
+                if sample in downloaded or sample[0:4]!= 'SAMN':
+                    # dont include, already attributed to a database
+                    pass
+            
+                else:
+                    # record we are applying it to this database
+                    downloaded.append(sample)
 
-                # assign sample to database
-                if database not in dl_lists.keys():
-                    dl_lists[database] = []
-                dl_lists[database].append(sample)
+                    # assign sample to database
+                    if database not in dl_lists.keys():
+                        dl_lists[database] = []
+                    dl_lists[database].append(sample)
+            except:
+                print("BioSample with ID: {} not in acceptable format, skipping".format(sample))
 
     return dl_lists

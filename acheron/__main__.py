@@ -33,7 +33,7 @@ def main():
     if arguments.action_command == 'build':
         if arguments.build_command == 'feature':
             if arguments.type == 'kmer':
-                build_kmer_matrix(arguments.dataset, arguments.kmer_length, arguments.cores)
+                build_kmer_matrix(arguments.dataset, arguments.kmer_length, arguments.cores, arguments.cluster)
             elif arguments.type == 'genes':
                 build_genes_matrix(arguments.dataset)
             elif arguments.type == 'abricate':
@@ -95,6 +95,8 @@ def parse_arguments():
                     help="Number of cores to use, defaults to number of system cores minus 1")
     parent_parser.add_argument('-o', '--out', default = 'stdout',
                     help="Output path/file to save results")
+    parent_parser.add_argument('--cluster', default='none',
+                    help="Which cluster controller, currently only supports --cluster slurm")
 
     test_params = argparse.ArgumentParser(add_help=False)
     test_params.add_argument('-x', '--train', required=True,
@@ -107,12 +109,12 @@ def parse_arguments():
                     help="Number of features to keep past feature selection, not passing will skip feature selection")
     # labels required for supervised only
     test_params.add_argument('-l', '--label', required=True,
-                    help="what labels to base the models on, created by `acheron build label ...` ")
+                    help="what labels to use, created by `acheron build label ...` ")
     test_params.add_argument('--columns', default='none',help="subset of columns in label")
     test_params.add_argument('-m', '--model', default='XGB', choices = ['XGB','SVM','ANN','kSNP3'],
                     help="The model you would like to build")
     test_params.add_argument('-p', '--hyperparam', default=False,
-                    help="Enable hyperparameter optimizations and nest the cross validations, will use training set to validate hyperparams")
+                    help="Enable hyperparameter optimizations and nest the cross validations")
     test_params.add_argument('-a', '--attribute',required=True,
                     help="Which attribute to train the model on (column of label)")
     test_params.add_argument('-t', '--type', required=True,

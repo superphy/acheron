@@ -35,7 +35,7 @@ if not cont:
     print("Exiting download at user request")
     sys.exit()
 
-# PATRIC wants genomd id's instead of biosample numbers. We need to convert
+# PATRIC wants genome id's instead of biosample numbers. We need to convert
 ids = sequence_tools.biosamples_to_genomeids(biosamples, pathogen)
 bio2id = dict(zip(biosamples,ids))
 
@@ -50,18 +50,3 @@ rule download_and_rename:
         id = bio2id[wildcards.bio]
         dl_path = "ftp://ftp.patricbrc.org/genomes/{0}/{0}.fna".format(id)
         shell("wget {dl_path} -O {output}")
-"""
-rule download:
-    output:
-        output_path+'/'+"{id}.fna"
-    shell:
-        "wget -P {output_path} ftp://ftp.patricbrc.org/genomes/{wildcard.id}/{wildcard.id}.fna"
-
-rule rename:
-    input:
-        output_path+'/'+bio2id[wildcards.bio]+"{}.fna"
-    output:
-        output_path+'/'+"{bio}.fasta"
-    shell:
-        "mv {input} {output}"
-"""

@@ -4,11 +4,14 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.metrics import precision_recall_fscore_support
 from collections import Counter
 import math
 import xgboost as xgb
 import pickle
 import sys, os
+
+from acheron.helpers import model_evaluators
 
 def is_valid_type(val):
     # covers core floats, numpy floating and complex floating
@@ -134,8 +137,8 @@ def train_model(features, label, model_type):
         # if we explode past our ram usage on this step
 
         xgb_matrix = xgb.DMatrix(features.values, label, feature_names=features.columns)
-        #params = {'objective':objective, 'num_class': num_classes}
-        params = {'objective':objective}
+        params = {'objective':objective, 'num_class': num_classes}
+        #params = {'objective':objective}
         booster = xgb.train(params, xgb_matrix)
         return booster
 
@@ -152,14 +155,59 @@ def predict(model, features, model_type):
     else:
         raise Exception("model type {} not defined".format(model_type))
 
-def evaluate_model(predicted, actual, model_type):
+def evaluate_model(predicted, actual, model_type, dilutions, attribute):
     """
-    Evaluates how well a model did based on direct and off-by-one accuracy, as well as
-    matthews correlation co-effecient
+    Evaluates how well a model did (accuracy)
+    For mic modules, also reports off-by-one accuracy and error rates
     """
-    # this df will eventually need all info about the test
+    # this df will eventually get all info about the test
     direct_accuracy  = np.sum([predicted[i]==actual[i] for i in range(len(predicted))])/len(predicted)
-    results_df = pd.DataFrame(data = [[direct_accuracy,direct_accuracy]], columns = ['direct','1D'])
+
+    dilutional_accuracies = {}
+    find_errors = False
+
+    if len(dilutions) > 0:
+        find_errors = True
+        for dilution in dilutions:
+            total = 0
+            correct = 0
+            for i in range(len(predicted)):
+                total +=1
+                if abs(predicted[i]-actual[i]) <= dilution:
+                    correct +=1
+            dilutional_accuracies[dilution] = correct/total
+
+    data = [direct_accuracy]
+    columns = ['Accuracy']
+
+    for dilution in dilutions:
+        data.append(dilutional_accuracies[dilution])
+        columns.append("Within {} Dilution".format(dilution))
+
+    if find_errors:
+        errors = [model_evaluators.find_error_type(i[0],i[1], attribute) for i in zip(predicted, actual)]
+
+        error_counts = Counter(errors)
+
+        error_types = ["Very Major Error", "Major Error", "Non Error"]
+        total_errors = 0
+
+        for error_type in error_types:
+            total_errors += error_counts[error_type]
+
+            percent = error_counts[error_type]/len(predicted)
+
+            data.append(percent)
+            columns.append(error_type)
+
+        try:
+            assert len(predicted) == total_errors
+        except:
+            print('Number of Errors+Correct does not equal number of predictions')
+            raise
+
+    results_df = pd.DataFrame(data=data, columns=columns)
+
     return results_df
 
 def apply_mask(features, labels, mask):
@@ -179,6 +227,10 @@ def apply_mask(features, labels, mask):
 
     mask = mask[[i in seen for i in mask.index]]
     labels = labels[[i in seen for i in labels.index]]
+
+    # prior to reindexing, we need to make sure there are no duplicates
+    mask = mask[~mask.index.duplicated(keep='first')]
+    labels = labels[~labels.index.duplicated(keep='first')]
 
     # reorder dataframes to make sure they are in the same order as the features
     mask = mask.reindex(seen)
@@ -267,6 +319,11 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     with open("data/{}/labels/{}_encoder.pkl".format(train, label_name), 'rb') as unpickler:
         train_encoder = pickle.load(unpickler)
 
+    if 'MIC' in label_name:
+        dilutions = [1]
+    else:
+        dilutions = []
+
     if not do_hyp:
         # for non-nested cross validation[attribute]
         if validation not in ['none','None']:
@@ -277,6 +334,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             # dataset_name, label_name, trial, type, num_feats, k
             features, labels, mask, split = load_data(train,label_name,trial,type,num_feats,k)
             for fold in cv_folds:
+
                 pass
                 # TODO do split stuff here, apply mask, etc
 
@@ -285,7 +343,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             # call with supplied train and test
             # splits in this case will be a matrix of 1's, as there is only 1 fold[attribute]
             train_features, train_labels, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,1,attribute)
-            test_features, test_labels, test_mask, test_split = load_data(train,label_name,trial,type,num_feats,1,attribute)
+            test_features, test_labels, test_mask, test_split = load_data(test,label_name,trial,type,num_feats,1,attribute)
 
             with open("data/{}/labels/{}_encoder.pkl".format(test, label_name), 'rb') as test_unpickler:
                 test_encoder = pickle.load(test_unpickler)
@@ -299,8 +357,10 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             model = train_model(train_features, encoded_train_labels, model_type)
             predicted = predict(model, test_features, model_type)
             encoded_test_labels = [test_encoder[attribute][i] for i in test_labels]
-            summary = evaluate_model(predicted, encoded_test_labels, model_type)
+            summary = evaluate_model(predicted, encoded_test_labels, model_type, dilutions, attribute)
+            prec_recall = precision_recall_fscore_support(encoded_test_labels, predicted,average=None, labels=test_encoder[attribute])
 
+            predicted_df = pd.DataFrame(data=predicted, columns=[attribute], index=test_features.index)
 
     else:
         # for nested cross-validation (hyperparameter optimizations)
@@ -323,11 +383,10 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             pass
 
     # if the features are not included in a model, they need to be included somewhere
-    return model, predicted, summary
+    return model, predicted_df, summary, prec_recall
 
 if __name__ == "__main__":
     """
-    If we know that the inputs are satisfied (can be determined using
-    the dry_run flag of acheron build model), we can manually call this script
+    If we know that the inputs are satisfied we can manually call this script
     """
     pass

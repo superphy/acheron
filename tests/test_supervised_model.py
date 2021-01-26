@@ -13,7 +13,7 @@ def setup_data():
     label.build_module_label('acheron_test_samples','MIC', 'test_MIC',
     'AMP_MIC,CIP_MIC,SXT_MIC',meta_path, 'names')
 
-    kmer.build_kmer_matrix('acheron_test_samples', 11, 1)
+    kmer.build_kmer_matrix('acheron_test_samples', 11, 1, 'none')
 
 setup_data()
 
