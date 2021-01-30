@@ -46,9 +46,9 @@ def test_find_error_type():
     #find_error_type(predicted, actual, abx)
     assert model_evaluators.find_error_type(1, '32', "AMP") == "Very Major Error"
     assert model_evaluators.find_error_type('1', 32, "AMP") == "Very Major Error"
-    assert model_evaluators.find_error_type(16, 32, "AMP") == "Non Error"
+    assert model_evaluators.find_error_type(16, 32, "AMP") == "Non Major Error"
     assert model_evaluators.find_error_type(64, 1, "AMP") == "Major Error"
 
     assert model_evaluators.find_error_type(0.06, 1, "CIP") == "Very Major Error"
     assert model_evaluators.find_error_type(1, 0.06, "CIP") == "Major Error"
-    assert model_evaluators.find_error_type(0.12, '0.125', "CIP") =="Non Error"
+    assert model_evaluators.find_error_type(0.12, '0.125', "CIP") =="Correct"

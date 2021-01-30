@@ -130,7 +130,7 @@ def find_error_type(predicted, actual, abx):
     pred_class = to_resistance_type(pred, breakpoints[abx])
     act_class = to_resistance_type(act, breakpoints[abx])
 
-    if predicted == actual:
+    if is_equiv(pred, act):
         return "Correct"
     elif pred_class == 'R' and act_class == 'S':
         return "Major Error"
