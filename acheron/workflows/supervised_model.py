@@ -155,10 +155,11 @@ def predict(model, features, model_type):
     else:
         raise Exception("model type {} not defined".format(model_type))
 
-def evaluate_model(predicted, actual, model_type, dilutions, attribute):
+def evaluate_model(predicted, actual, model_type, dilutions, attribute, encoder):
     """
     Evaluates how well a model did (accuracy)
     For mic modules, also reports off-by-one accuracy and error rates
+    Takes encoded class labels (0,1,2) not decoded values (2,4,8,16)
     """
     # this df will eventually get all info about the test
     direct_accuracy  = np.sum([predicted[i]==actual[i] for i in range(len(predicted))])/len(predicted)
@@ -181,15 +182,21 @@ def evaluate_model(predicted, actual, model_type, dilutions, attribute):
     columns = ['Accuracy']
 
     for dilution in dilutions:
-        data.append(dilutional_accuracies[dilution])
-        columns.append("Within {} Dilution".format(dilution))
+        if str(dilution) == '0':
+            continue
+        else:
+            data.append(dilutional_accuracies[dilution])
+            columns.append("Within {} Dilution".format(dilution))
 
     if find_errors:
-        errors = [model_evaluators.find_error_type(i[0],i[1], attribute) for i in zip(predicted, actual)]
+        decoder = {v:k for k,v in encoder.items()}
+        pred_decoded = [decoder[i] for i in predicted]
+        act_decoded = [decoder[i] for i in actual]
+        errors = [model_evaluators.find_error_type(i[0],i[1], attribute) for i in zip(pred_decoded, act_decoded)]
 
         error_counts = Counter(errors)
 
-        error_types = ["Very Major Error", "Major Error", "Non Error"]
+        error_types = ["Very Major Error", "Major Error", "Non Major Error", "Correct"]
         total_errors = 0
 
         for error_type in error_types:
@@ -206,7 +213,7 @@ def evaluate_model(predicted, actual, model_type, dilutions, attribute):
             print('Number of Errors+Correct does not equal number of predictions')
             raise
 
-    results_df = pd.DataFrame(data=data, columns=columns)
+    results_df = pd.DataFrame(data=[data], columns=columns)
 
     return results_df
 
@@ -357,10 +364,14 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             model = train_model(train_features, encoded_train_labels, model_type)
             predicted = predict(model, test_features, model_type)
             encoded_test_labels = [test_encoder[attribute][i] for i in test_labels]
-            summary = evaluate_model(predicted, encoded_test_labels, model_type, dilutions, attribute)
-            prec_recall = precision_recall_fscore_support(encoded_test_labels, predicted,average=None, labels=test_encoder[attribute])
+            summary = evaluate_model(predicted, encoded_test_labels, model_type, dilutions, attribute, train_encoder[attribute])
+            prec_recall = precision_recall_fscore_support(encoded_test_labels, predicted,average=None, labels=list(test_encoder[attribute].values()))
+            prec_recall = np.transpose(prec_recall)
+            prec_recall = pd.DataFrame(data=prec_recall, index = list(train_encoder[attribute].keys()),columns = ['Precision','Recall', 'F-Score','Supports'])
 
-            predicted_df = pd.DataFrame(data=predicted, columns=[attribute], index=test_features.index)
+            decoder = {v:k for k,v in test_encoder[attribute].items()}
+            decoded_predictions = [decoder[i] for i in predicted]
+            predicted_df = pd.DataFrame(data=decoded_predictions, columns=[attribute], index=test_features.index)
 
     else:
         # for nested cross-validation (hyperparameter optimizations)
@@ -385,8 +396,69 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     # if the features are not included in a model, they need to be included somewhere
     return model, predicted_df, summary, prec_recall
 
+def manual_call(arguments):
+    # attr = getattr(arguments,arg)
+
+    # which label to use
+    label = getattr(arguments, 'label')
+    # how many splits/folds in cross validation, e.g. 5-fold CV
+    num_cv_splits = getattr(arguments, 'cv')
+
+    trials = [i for i in range(getattr(arguments, 'trial'))]
+    attribute_type = getattr(arguments, 'type')
+
+    # First select what data needs to be setup
+    datasets = []
+    for dataset in ['train','test','validation']:
+        if getattr(arguments, dataset) not in ['None','none']:
+            datasets.append(dataset)
+
+    # Make masks (selects which data is valid and which samples have attributes to be ignored)
+    for dataset in datasets:
+        label_df = pd.read_pickle("data/{}/labels/{}.df".format(dataset,label))
+        if len(datasets) > 1:
+            mask = make_mask(label_df, num_cv_splits)
+        else:
+            mask = make_mask(label_df, 1)
+        mask.to_pickle("data/{}/features/masks/{}_{}.df".format(
+            dataset,attribute_type,label))
+
+    # Split data (only required when using one dataset (cross validating))
+    if len(datasets) == 1:
+        import glob
+        samples = glob.glob("data/{}/wgs/raw/*.fasta".format(datasets[0]))
+        for trial in trials:
+            split = make_split(label_df, mask, num_cv_splits, samples)
+            split.to_pickle("data/{}/masks/split{}_{}_{}_{}xCV.df".format(
+                datasets[0],trial,attribute_type,label,num_cv_splits))
+
+    # Build Model
+    for trial in trials:
+        model, predicted_df, summary, prec_recall = supervised_model.make_model(
+            getattr(arguments,'model'),getattr(arguments,'train'),
+            getattr(arguments,'test'),getattr(arguments,'validation'),
+            getattr(arguments,'label'),getattr(arguments,'type'),
+            getattr(arguments,'attribute'),getattr(arguments,'num_features'),
+            getattr(arguments,'hyperparam'),getattr(arguments,'cv'),trial)
+
+        out = "results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}_attribute={}_trial={}/".format(
+        getattr(arguments,'model'), getattr(arguments,'train'), getattr(arguments,'test'),
+        getattr(arguments,'validation'), getattr(arguments,'num_features'),
+        getattr(arguments,'hyperparam'), getattr(arguments,'cv'),
+        getattr(arguments,'attribute'), trial)
+
+        joblib.dump(model, out+'/model.joblib')
+        predicted_df.to_pickle(out+"/predictions.df")
+        prec_recall.to_pickle(out+"/precision_recall_fscore_support.df")
+        summary.to_pickle(out+"/summary.df")
+
+        print("Model creation completed and saved. Results saved in {}".format(out))
+
 if __name__ == "__main__":
     """
-    If we know that the inputs are satisfied we can manually call this script
+    If we know that the inputs are satisfied we can manually call this script.
+    This is done using acheron, not by calling python acheron/workflows/supervised_model.py
+    WARNING: This directly calls model creation, things like cluster support will be skipped!
+    If using slurm, you need to wrap the call yourself.
     """
-    pass
+    raise Exception("To manually call this script, pass --manual to acheron build model. This allows you to still use the command line tool parser")

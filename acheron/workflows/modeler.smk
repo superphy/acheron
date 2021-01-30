@@ -39,7 +39,7 @@ rule all:
     input:
         expand("results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}".format(
         config['model'], config['train'], config['test'], config['validation'],
-        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}.df',atb=columns, trl=trials)
+        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}/summary.df',atb=columns, trl=trials)
 
 rule mask:
     input:

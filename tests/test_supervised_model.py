@@ -7,6 +7,8 @@ import math
 from acheron.workflows import supervised_model
 from acheron import kmer, label
 
+import joblib
+
 def setup_data():
     meta_path = "data/acheron_test_samples/labels/test_metadata.csv"
 
@@ -113,3 +115,18 @@ def test_select_features():
     assert newer_features.columns[1] == 'third'
 
     assert newer_features.shape == (3,2)
+
+def test_evaluate_model():
+    # [1 ,1,2,2,8]
+    prediction = [0,0,1,1,3]
+    # [32,1,2,4,16]
+    actual =     [5,0,1,2,4]
+
+    test_encoder = joblib.load('data/acheron_test_samples/labels/test_MIC_encoder.pkl')
+    results_df = supervised_model.evaluate_model(prediction, actual, 'XGB', [0,1], 'AMP', test_encoder['AMP'])
+
+    cols = ['Accuracy','Within 1 Dilution','Very Major Error','Major Error','Non Major Error','Correct']
+    accs = [0.4       ,0.8                ,0.2               ,0.0          ,0.4              ,0.4]
+
+    for col, acc in zip(cols, accs):
+        assert results_df[col][0] == acc

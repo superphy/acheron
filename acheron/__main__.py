@@ -54,7 +54,13 @@ def main():
                     arguments.path, arguments.key)
 
         elif arguments.build_command == 'model':
-            build_model(arguments)
+            if arguments.manual_model == False:
+                build_model(arguments)
+            elif arugments.cluster != 'none':
+                raise Exception("Manual call does not support cluster, you need to wrap it yourself.")
+            else:
+                from acheron.workflows import supervised_model
+                supervised_model.manual_call(arguments)
 
         else:
             raise argparse.ArgumentError(arguments.build_command, "acheron build requires another positional argument from the list above")
@@ -122,6 +128,7 @@ def parse_arguments():
     test_params.add_argument('--trial', default=1,
                     help="to run the same test multiple times, change trial number")
     test_params.add_argument('--cv', default=5, help="number of folds in cross validation")
+    test_params.add_argument('--manual', default=False, help="To manually call model creation, skipping snakemake checks and cluster support")
 
     download_params = argparse.ArgumentParser(add_help=False)
     download_params.add_argument('-db', '--database', required=True, action='append',
