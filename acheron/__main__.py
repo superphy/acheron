@@ -54,7 +54,7 @@ def main():
                     arguments.path, arguments.key)
 
         elif arguments.build_command == 'model':
-            if arguments.manual_model == False:
+            if arguments.manual == False:
                 build_model(arguments)
             elif arugments.cluster != 'none':
                 raise Exception("Manual call does not support cluster, you need to wrap it yourself.")
