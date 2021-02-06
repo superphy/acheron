@@ -103,7 +103,6 @@ def make_split(label_matrix, mask, k, samples):
 
     return split_df
 
-
 def load_data(dataset_name, label_name, trial, type, num_feats, k, attribute):
     """
     load requested dataset, mask, and split
@@ -178,8 +177,8 @@ def evaluate_model(predicted, actual, model_type, dilutions, attribute, encoder)
                     correct +=1
             dilutional_accuracies[dilution] = correct/total
 
-    data = [direct_accuracy]
-    columns = ['Accuracy']
+    data = [len(predicted),direct_accuracy]
+    columns = ["Supports", "Accuracy"]
 
     for dilution in dilutions:
         if str(dilution) == '0':
@@ -216,6 +215,51 @@ def evaluate_model(predicted, actual, model_type, dilutions, attribute, encoder)
     results_df = pd.DataFrame(data=[data], columns=columns)
 
     return results_df
+
+def mean_summaries(summaries):
+    """
+    Takes a list of model summaries
+    averages them appropriately, relevant to number of supports
+    """
+    try:
+        indx = summaries[0].index[0]
+    except:
+        indx = 0
+
+    mean_df = pd.DataFrame(columns=summaries[0].columns, index=[indx])
+
+    total_supports = 0
+    proportion = {}
+
+    for summary in summaries:
+        num_sups = summary['Supports'][0]
+        total_supports += num_sups
+        for col in summary.columns:
+            if col != "Supports":
+                if col in proportion.keys():
+                    proportion[col] += num_sups*summary[col][0]
+                else:
+                    proportion[col] = num_sups*summary[col][0]
+
+    mean_df.loc[indx,'Supports'] = total_supports
+    for k,v in proportion.items():
+        mean_df.loc[indx, k] = v/total_supports
+
+    return mean_df
+
+def mean_prec_recall(prec_recall_dfs):
+    """
+    Takes a list of precision_recall_fscore_support dataframes
+    Returns the mean df based on proportion of supports
+    """
+    indeces = prec_recall_dfs[0].index
+    done_rows = []
+
+    for indx in indeces:
+        rows = [i[i.index == indx] for i in prec_recall_dfs]
+        done_rows.append(mean_summaries(rows))
+
+    return pd.concat(done_rows)
 
 def apply_mask(features, labels, mask):
     """
@@ -298,7 +342,75 @@ def select_features(features, labels, num_feats, pre_selection):
 
         return features
 
+def split_data(features, labels, split, attribute, hyp, fold, num_splits, BLOCK_TRAIN=False):
+    """
+    Splits into train, testing and validation (if asked for)
+    based on predetermined spliting computed beforehand
+    No determination of which samples belong in which split happens at this point
+    """
 
+    # if BLOCK_TRAIN = true, folds are batched into blocks, so 10-fold would be 2 test, 2 val, 6 train
+    # if left as false, its 1 fold test, 1 fold val, and the rest would be training, regardless to number of folds
+
+    split = split[attribute]
+    labels = labels[attribute]
+
+    split_priority = [(i+int(fold)-1)%num_splits for i in range(num_splits)]
+    """
+    split_priority above defines which folds become validation or testing
+    if fold 3 for a 5-fold cross-validation is given, split_priority will look like:
+        [2, 3, 4, 0, 1]
+    where fold 2 becomes the testing set, and 3 becomes validation (if requested, else becomes training)
+    if fold 7 for 10-fold cross-validation is given, split_priority will look like:
+        [6, 7, 8, 9, 0, 1, 2, 3, 4, 5]
+    """
+
+    if BLOCK_TRAIN:
+        # If using 5 fold cross val, testing will be 1 block or 1 of 5
+        # if using 10 fold, 20% will therefore be 2 blocks
+        # 7 fold with then be 1 block for test 1 block val, 5 blocks training
+        if num_splits < 5:
+            folds_per_block = 1
+        else:
+            folds_per_block = num_splits//5
+    else:
+        folds_per_block = 1
+
+    # which block of fold is to be used for testing
+    test_blocks = split_priority[:folds_per_block]
+
+    # Split for cross-validation, e.g. 80%-20% for 5 folds
+    if hyp == False:
+        test_mask = [i in test_blocks for i in split]
+        train_mask = [i not in test_blocks for i in split]
+
+        x_train = features[train_mask]
+        y_train = labels[train_mask]
+
+        x_test = features[test_mask]
+        y_test = labels[test_mask]
+
+        return x_train, y_train, x_test, y_test
+
+    # Split for nested cross-validation, e.g. 60%-20%-20%, for 5 folds
+    else:
+        # which blocks to use for validation
+        val_blocks = split_priority[folds_per_block:folds_per_block*2]
+
+        test_mask = [i in test_blocks for i in split]
+        val_mask = [i in val_blocks for i in split]
+        train_mask = [i not in test_blocks and i not in val_blocks for i in split]
+
+        x_train = features[train_mask]
+        y_train = labels[train_mask]
+
+        x_test = features[test_mask]
+        y_test = labels[test_mask]
+
+        x_val = features[val_mask]
+        y_val = labels[val_mask]
+
+        return x_train, y_train, x_val, y_val, x_test, y_test
 
 def make_model(model_type,train,test,validation,label_name,type,attribute,num_feats,do_hyp,cv_folds,trial):
     """
@@ -331,50 +443,66 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     else:
         dilutions = []
 
+    # As models are created, we can save them here, average after
+    final_models = []
+    final_features = []
+    final_labels = []
+
+
     if not do_hyp:
-        # for non-nested cross validation[attribute]
+        """
+        This block for k-fold cross validation (NOT nested)
+        And direct dataset-to-dataset predictions
+        """
         if validation not in ['none','None']:
             raise Exception("Validation set can only be used when doing hyperparameter optimizations")
         if test == '':
             # k-fold cv split training set into train and test
             # x is data, y is labels, splits are which samples belong in each split for each cv
             # dataset_name, label_name, trial, type, num_feats, k
-            features, labels, mask, split = load_data(train,label_name,trial,type,num_feats,k)
-            for fold in cv_folds:
+            features, labels, mask, split = load_data(train,label_name,trial,type,num_feats,k, attribute)
+            for fold in range(cv_folds):
+                # reduce to top features,
+                # also only return the features that have been selected to be part of each set
+                # def select_features(features, labels, num_feats, pre_selection)
+                x_train, y_train, x_test, y_test = split_data(features, labels, split, attribute, do_hyp, fold, cv_folds)
 
-                pass
-                # TODO do split stuff here, apply mask, etc
+                # select features based purely on training data, testing data cant be seen by feature selection
+                x_train = select_features(x_train, y_train, num_feats, False)
+                x_test = select_features(x_test,'dont need',num_feats, x_train.columns)
 
+                encoded_y_train = [train_encoder[attribute][i] for i in y_train]
+
+                model = train_model(x_train, encoded_y_train, model_type)
+                final_models.append(model)
+                final_features.append(x_test)
+                final_labels.append(y_test)
 
         else:
-            # call with supplied train and test
+            # call with supplied train and test, no cross validation
             # splits in this case will be a matrix of 1's, as there is only 1 fold[attribute]
-            train_features, train_labels, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,1,attribute)
-            test_features, test_labels, test_mask, test_split = load_data(test,label_name,trial,type,num_feats,1,attribute)
+            x_train, y_train, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,1,attribute)
+            x_test, y_test, test_mask, test_split = load_data(test,label_name,trial,type,num_feats,1,attribute)
 
             with open("data/{}/labels/{}_encoder.pkl".format(test, label_name), 'rb') as test_unpickler:
                 test_encoder = pickle.load(test_unpickler)
 
-            encoded_train_labels = [train_encoder[attribute][i] for i in train_labels]
+            encoded_y_train = [train_encoder[attribute][i] for i in y_train]
 
             # reduce to top features
-            train_features = select_features(train_features, train_labels, num_feats, False)
-            test_features = select_features(test_features,'dont need',num_feats, train_features.columns)
+            x_train = select_features(x_train, y_train, num_feats, False)
+            x_test = select_features(x_test,'dont need',num_feats, y_train.columns)
 
-            model = train_model(train_features, encoded_train_labels, model_type)
-            predicted = predict(model, test_features, model_type)
-            encoded_test_labels = [test_encoder[attribute][i] for i in test_labels]
-            summary = evaluate_model(predicted, encoded_test_labels, model_type, dilutions, attribute, train_encoder[attribute])
-            prec_recall = precision_recall_fscore_support(encoded_test_labels, predicted,average=None, labels=list(test_encoder[attribute].values()))
-            prec_recall = np.transpose(prec_recall)
-            prec_recall = pd.DataFrame(data=prec_recall, index = list(train_encoder[attribute].keys()),columns = ['Precision','Recall', 'F-Score','Supports'])
+            model = train_model(x_train, encoded_y_train, model_type)
+            final_models.append(model)
+            final_features.append(x_test)
+            final_labels.append(y_test)
 
-            decoder = {v:k for k,v in test_encoder[attribute].items()}
-            decoded_predictions = [decoder[i] for i in predicted]
-            predicted_df = pd.DataFrame(data=decoded_predictions, columns=[attribute], index=test_features.index)
 
     else:
-        # for nested cross-validation (hyperparameter optimizations)
+        """
+        This block for nested cross-validation (hyperparameter optimizations)
+        """
         if test in [train,validation]:
             raise Exception("You cannot use the testing set for training or validation")
         if validation == 'none' and test == 'none':
@@ -393,8 +521,41 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             #TODO do no splitting, call for model execution
             pass
 
-    # if the features are not included in a model, they need to be included somewhere
-    return model, predicted_df, summary, prec_recall
+    trained_models = []
+    predicted_dfs = []
+    summaries = []
+    prec_recall_dfs = []
+
+    for model, x_test, y_test in zip(final_models, final_features, final_labels):
+
+        predicted = predict(model, x_test, model_type)
+        encoded_y_test = [train_encoder[attribute][i] for i in y_test]
+        summary = evaluate_model(predicted, encoded_y_test, model_type, dilutions, attribute, train_encoder[attribute])
+        prec_recall = precision_recall_fscore_support(encoded_y_test, predicted,average=None, labels=list(train_encoder[attribute].values()))
+        prec_recall = np.transpose(prec_recall)
+        prec_recall = pd.DataFrame(data=prec_recall, index = list(train_encoder[attribute].keys()),columns = ['Precision','Recall', 'F-Score','Supports'])
+
+        decoder = {v:k for k,v in train_encoder[attribute].items()}
+        decoded_predictions = [decoder[i] for i in predicted]
+        predicted_df = pd.DataFrame(data=decoded_predictions, columns=[attribute], index=x_test.index)
+
+        trained_models.append(model)
+        predicted_dfs.append(predicted_df)
+        summaries.append(summary)
+        prec_recall_dfs.append(prec_recall)
+
+    # Models stay in a list
+
+    # stack predictions
+    predicted_dfs = pd.concat([predicted_dfs])
+
+    # mean summaries
+    summaries = mean_summaries(summaries)
+
+    # mean prec_recall_dfs
+    prec_recall_dfs = mean_prec_recall(prec_recall_dfs)
+
+    return trained_models, predicted_dfs, summaries, prec_recall_dfs
 
 def manual_call(arguments):
     # attr = getattr(arguments,arg)
@@ -434,7 +595,7 @@ def manual_call(arguments):
 
     # Build Model
     for trial in trials:
-        model, predicted_df, summary, prec_recall = supervised_model.make_model(
+        models, predicted_df, summary, prec_recall = supervised_model.make_model(
             getattr(arguments,'model'),getattr(arguments,'train'),
             getattr(arguments,'test'),getattr(arguments,'validation'),
             getattr(arguments,'label'),getattr(arguments,'type'),
@@ -447,7 +608,8 @@ def manual_call(arguments):
         getattr(arguments,'hyperparam'), getattr(arguments,'cv'),
         getattr(arguments,'attribute'), trial)
 
-        joblib.dump(model, out+'/model.joblib')
+        for fold_num, model in enumerate(models):
+            joblib.dump(model, "{}/model{}.joblib".format(out,fold))
         predicted_df.to_pickle(out+"/predictions.df")
         prec_recall.to_pickle(out+"/precision_recall_fscore_support.df")
         summary.to_pickle(out+"/summary.df")
