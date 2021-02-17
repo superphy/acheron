@@ -124,6 +124,17 @@ def find_error_type(predicted, actual, abx):
     # Chloramphenicol
     breakpoints['CHL'] = [8,[16],32]
 
+    """
+    The breakpoints for Streptomycin, naladixic acid, and ceftiofur
+    are not listed, and we will use published FDA guidelines.
+    """
+    # Naladixic Acid
+    breakpoints['NAL'] = [16,[],32] # FDA 2017 (or newer)
+    # Streptomycin
+    breakpoints['STR'] = [16,[],32] # FDA 2017 (or newer)
+    # Ceftiofur
+    breakpoints['TIO'] = [2,[4],8] # FDA 2012/2013
+
     pred = to_float(predicted)
     act = to_float(actual)
 

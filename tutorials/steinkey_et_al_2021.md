@@ -77,6 +77,24 @@ If getting RLIMIT_NPROC or pthread_create errors with slurm, run `export OPENBLA
 ### Desktop Computer
 ### `acheron build model -x salm_amr -y grdi -l AMR_MIC -f 1000 -m XGB -c 8 -a AMP -t 11mer`
 
-This is an example of building a model on publically available data and then using it to predict on the canadian GRDI dataset.
+These are examples of building a model on publically available data and then using it to predict on the canadian GRDI dataset. This is done to test that both datasets are valid.
 
-# Will add more, as more data is generated.
+
+### `for drug in AMP AMC AZM CHL CIP CRO FIS FOX GEN NAL SXT TET TIO STR KAN; do acheron build model -x salm_amr -l AMR_MIC -f 1000 -m XGB -c 8 -a $drug -t 11mer --cluster slurm --trial 10; done`
+
+This command will build 5-fold cross-validated xgboost models on the NCBI & PATRIC dataset, 10 times. If you had already ran 1 iteration, this command will only run the next 9. If you already have 10, and want another ten, then you need to pass `--trial 20`
+
+
+### `for drug in AMP AMC AZM CHL CIP CRO FOX GEN NAL SXT TET TIO STR KAN; do acheron build model -x grdi -l AMR_MIC -f 1000 -m XGB -c 8 -a $drug -t 11mer --cluster slurm --trial 10; done`
+
+Same as above, but for the grdi dataset, not the grdi dataset does not have sulfisoxazole data
+
+
+### `for drug in AMP AMC AZM CHL CIP CRO FOX GEN NAL SXT TET TIO STR KAN; do acheron build model -x salm_amr -y grdi -l AMR_MIC -f 1000 -m XGB -c 8 -a $drug -t 11mer --cluster slurm --trial 10; done`
+
+Now we build models trained on public NCBI & PATRIC data, then use the trained models to predict how well they preform predicting on canadian grdi data.
+
+
+### `for drug in AMP AMC AZM CHL CIP CRO FOX GEN NAL SXT TET TIO STR KAN; do acheron build model -x grdi -y salm_amr -l AMR_MIC -f 1000 -m XGB -c 8 -a $drug -t 11mer --cluster slurm --trial 10; done`
+
+We can then do the opposite, training on grdi and using those models to predict resistance to NCBI and PATRIC data.

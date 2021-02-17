@@ -70,8 +70,10 @@ def make_split(label_matrix, mask, k, samples):
     but only for valid samples. Produces a random split each time (stratified)
     """
     assert(2<=k<=255) # if exceeding 255, change dtype below to uint16
-    split_df =  pd.DataFrame(data=np.zeros(label_matrix.shape),
+    split_df = pd.DataFrame(data=np.zeros(label_matrix.shape),
         columns=label_matrix.columns, index = label_matrix.index, dtype='uint8')
+
+    split_df = split_df[~split_df.index.duplicated(keep='first')]
 
     for col in label_matrix.columns:
         # which labels are valid in this specific column
@@ -83,9 +85,26 @@ def make_split(label_matrix, mask, k, samples):
             print("All samples in column "+col+" are invalid, skipping split")
             continue
 
+        # in the event of duplicates, keep only the first seen instance
+        processed = []
+
         # we also need to factor in that we only have the samples in /samples,
         # where a datasheet might have thousands of valid, but extra datapoints
-        seen_bool_mask = np.array([i in samples for i in valid_samples])
+        #seen_bool_mask = np.array([i in samples and i not in duplicates for i in valid_samples])
+        seen_bool_mask = []
+
+        for i in valid_samples:
+            if i in processed:
+                seen_bool_mask.append(False)
+            else:
+                processed.append(i)
+                if i in samples:
+                    seen_bool_mask.append(True)
+                else:
+                    seen_bool_mask.append(False)
+
+        seen_bool_mask = np.array(seen_bool_mask)
+
         final_labels = valid_labels[seen_bool_mask]
         final_samples = valid_samples[seen_bool_mask]
 
@@ -112,7 +131,7 @@ def load_data(dataset_name, label_name, trial, type, num_feats, k, attribute):
     mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))[attribute]
 
     if k!=1:
-        split = pd.read_pickle("data/{}/masks/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,k))
+        split = pd.read_pickle("data/{}/splits/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,k))
     else:
         split = []
 
@@ -120,11 +139,11 @@ def load_data(dataset_name, label_name, trial, type, num_feats, k, attribute):
 
     return features, labels, mask, split
 
-def train_model(features, label, model_type):
+def train_model(features, label, model_type, num_classes):
     """
     Converts feature and label matrices in a trained model
     """
-    num_classes = len(Counter(label).keys())
+    #num_classes = len(Counter(label).keys())
 
     if model_type.upper() in ['XGB', 'XGBOOST']:
         if num_classes == 2:
@@ -143,6 +162,12 @@ def train_model(features, label, model_type):
 
     else:
         raise Exception("model type {} not defined".format(model_type))
+
+def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
+    """
+    Trains a hyperparameter optimized model
+    """
+    pass
 
 def predict(model, features, model_type):
     """
@@ -353,7 +378,10 @@ def split_data(features, labels, split, attribute, hyp, fold, num_splits, BLOCK_
     # if left as false, its 1 fold test, 1 fold val, and the rest would be training, regardless to number of folds
 
     split = split[attribute]
-    labels = labels[attribute]
+
+    # ensure splits are in the same order as the features
+    split = split[split.index.isin(features.index)]
+    split = split.reindex(features.index)
 
     split_priority = [(i+int(fold)-1)%num_splits for i in range(num_splits)]
     """
@@ -438,7 +466,9 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     with open("data/{}/labels/{}_encoder.pkl".format(train, label_name), 'rb') as unpickler:
         train_encoder = pickle.load(unpickler)
 
-    if 'MIC' in label_name:
+    num_classes = len(train_encoder[attribute].keys())
+
+    if 'MIC' in label_name or 'SIR' in label_name:
         dilutions = [1]
     else:
         dilutions = []
@@ -456,15 +486,14 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
         """
         if validation not in ['none','None']:
             raise Exception("Validation set can only be used when doing hyperparameter optimizations")
-        if test == '':
+        if test in ['none','None']:
             # k-fold cv split training set into train and test
             # x is data, y is labels, splits are which samples belong in each split for each cv
             # dataset_name, label_name, trial, type, num_feats, k
-            features, labels, mask, split = load_data(train,label_name,trial,type,num_feats,k, attribute)
+            features, labels, mask, split = load_data(train,label_name,trial,type,num_feats,cv_folds, attribute)
             for fold in range(cv_folds):
                 # reduce to top features,
                 # also only return the features that have been selected to be part of each set
-                # def select_features(features, labels, num_feats, pre_selection)
                 x_train, y_train, x_test, y_test = split_data(features, labels, split, attribute, do_hyp, fold, cv_folds)
 
                 # select features based purely on training data, testing data cant be seen by feature selection
@@ -473,7 +502,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
 
                 encoded_y_train = [train_encoder[attribute][i] for i in y_train]
 
-                model = train_model(x_train, encoded_y_train, model_type)
+                model = train_model(x_train, encoded_y_train, model_type, num_classes)
                 final_models.append(model)
                 final_features.append(x_test)
                 final_labels.append(y_test)
@@ -493,7 +522,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             x_train = select_features(x_train, y_train, num_feats, False)
             x_test = select_features(x_test,'dont need',num_feats, y_train.columns)
 
-            model = train_model(x_train, encoded_y_train, model_type)
+            model = train_model(x_train, encoded_y_train, model_type, num_classes)
             final_models.append(model)
             final_features.append(x_test)
             final_labels.append(y_test)
@@ -502,24 +531,116 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     else:
         """
         This block for nested cross-validation (hyperparameter optimizations)
+
+        There are 4 different ways this test could be shaped, the last 9 lines of code are all the same.
+        If you want to write a new test, make sure the parameters of the repeating 9 lines are satisfied.
+
+        The reason the 9 lines are outside of the loop is because different tests have the data fractioned
+        differently. To avoid flagging memory limits on cluster managers, we need internally split datasets
+        to be loaded as efficiently as possible and therefore different scope as other dataset.
         """
+
         if test in [train,validation]:
             raise Exception("You cannot use the testing set for training or validation")
         if validation == 'none' and test == 'none':
-            #TODO call 3way split, nested cross validation on train
-            pass
+            """
+            In this block, the training set is split into 60% training data,
+            20% hyperparam option validation, 20% testing (for 5-fold cv)
+            """
+            x, y, mask, split = load_data(train,label_name,trial,type,num_feats,cv_folds,attribute)
+            for fold in range(cv_folds):
+
+                x_train, y_train, x_val, y_val, x_test, y_test = split_data(
+                    features, labels, split, attribute, do_hyp, fold, cv_folds)
+
+                x_train = select_features(x_train, y_train, num_feats, False)
+                x_val = select_features(x_val,'dont need',num_feats, x_train.columns)
+                x_test = select_features(x_test,'dont need',num_feats, x_train.columns)
+
+                encoded_y_train = [train_encoder[attribute][i] for i in y_train]
+                encoded_y_val = [train_encoder[attribute][i] for i in y_val]
+
+                model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+                final_models.append(model)
+                final_features.append(x_test)
+                final_labels.append(y_test)
+
         elif validation == 'none':
-            #TODO split train 80% train, 20% validation, used passed train
-            pass
+            """
+            In this block, the training set is split into 80% training data,
+            20% hyperparam option validation, and the entirety of the dataset passed in as test
+            is used to test each fold. For 5-fold cross-validation, each 20% of the training set
+            gets used as a validation set, each time tested using 100% of the test set.
+            """
+            # split train into 80% train, 20% validation, used passed test for testing
+            x, y, mask, split = load_data(train,label_name,trial,type,num_feats,cv_folds,attribute)
+            x_test, y_test, test_mask, test_split = load_data(test,label_name,trial,type,num_feats,cv_folds,attribute)
+
+            for fold in range(cv_folds):
+                # call with do_hype=False so that it only splits 80%-20%
+                x_train, y_train, x_val, y_val = split_data(
+                    x, y, split, attribute, False, fold, cv_folds)
+
+                x_train = select_features(x_train, y_train, num_feats, False)
+                x_val = select_features(x_val,'dont need',num_feats, x_train.columns)
+                x_test = select_features(x_test,'dont need',num_feats, x_train.columns)
+
+                encoded_y_train = [train_encoder[attribute][i] for i in y_train]
+                encoded_y_val = [train_encoder[attribute][i] for i in y_val]
+
+                model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+                final_models.append(model)
+                final_features.append(x_test)
+                final_labels.append(y_test)
+
         elif test == 'none':
-            #TODO split train 80% train, 20% testing, use passed validation
-            pass
+            """
+            In this block, the training set is split into 80% training data,
+            20% testing data (for 5-fold cv). This is repeated 5 times, each time validating
+            hyperparams using the passed validation set.
+            """
+            x, y, mask, split = load_data(train,label_name,trial,type,num_feats,cv_folds,attribute)
+            x_val, y_val, val_mask, val_split = load_data(val,label_name,trial,type,num_feats,cv_folds,attribute)
+
+            for fold in range(cv_folds):
+                # call with do_hype=False so that it only splits 80%-20%
+                x_train, y_train, x_test, y_test = split_data(
+                    x, y, split, attribute, False, fold, cv_folds)
+
+                x_train = select_features(x_train, y_train, num_feats, False)
+                x_val = select_features(x_val,'dont need',num_feats, x_train.columns)
+                x_test = select_features(x_test,'dont need',num_feats, x_train.columns)
+
+                encoded_y_train = [train_encoder[attribute][i] for i in y_train]
+                encoded_y_val = [train_encoder[attribute][i] for i in y_val]
+
+                model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+                final_models.append(model)
+                final_features.append(x_test)
+                final_labels.append(y_test)
         else:
             # All datasets passed
             if train == validation:
                 raise Exception("Same dataset used for training and validation, to split training set for validation, do not pass --validation")
-            #TODO do no splitting, call for model execution
-            pass
+            """
+            In this block, no splitting occurs.
+            3 passed datasets, each used for its labeled purpose
+            """
+            x_train, y_train, train_mask, train_split = load_data(train,label_name,trial,type,num_feats,cv_folds,attribute)
+            x_val, y_val, val_mask, val_split = load_data(val,label_name,trial,type,num_feats,cv_folds,attribute)
+            x_test, y_test, test_mask, test_split = load_data(test,label_name,trial,type,num_feats,cv_folds,attribute)
+
+            x_train = select_features(x_train, y_train, num_feats, False)
+            x_val = select_features(x_val,'dont need',num_feats, x_train.columns)
+            x_test = select_features(x_test,'dont need',num_feats, x_train.columns)
+
+            encoded_y_train = [train_encoder[attribute][i] for i in y_train]
+            encoded_y_val = [train_encoder[attribute][i] for i in y_val]
+
+            model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+            final_models.append(model)
+            final_features.append(x_test)
+            final_labels.append(y_test)
 
     trained_models = []
     predicted_dfs = []
@@ -547,7 +668,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     # Models stay in a list
 
     # stack predictions
-    predicted_dfs = pd.concat([predicted_dfs])
+    predicted_dfs = pd.concat(predicted_dfs)
 
     # mean summaries
     summaries = mean_summaries(summaries)

@@ -28,7 +28,7 @@ splits = [] # path to splits df, for when only train is passed
 
 if config['test'] == 'none' and config['validation'] == 'none':
     for trial in range(config['trial']):
-        splits += ["data/{}/masks/split{}_{}_{}_{}xCV.df".format(
+        splits += ["data/{}/splits/split{}_{}_{}_{}xCV.df".format(
             config['train'],trial,config['type'],config['label'],config['cv'])]
 
 #print("this needs to be set to build an array of attributes, if multiple or 'all' is passed")
@@ -61,13 +61,14 @@ rule split_samples:
         splits
     run:
         samples = glob.glob("data/{}/wgs/raw/*.fasta".format(config['train']))
+        samples = [i.split('/')[-1].split('.')[0] for i in samples]
 
         # keep in mind, we only have splits when we are cross validating
         mask = pd.read_pickle(masks[0])
         for trial in trials:
             label_matrix = pd.read_pickle("data/{}/labels/{}.df".format(config['train'],config['label']))
             split = supervised_model.make_split(label_matrix, mask, config['cv'], samples)
-            split.to_pickle("data/{}/masks/split{}_{}_{}_{}xCV.df".format(
+            split.to_pickle("data/{}/splits/split{}_{}_{}_{}xCV.df".format(
                 config['train'],trial,config['type'],config['label'],config['cv']))
 
 rule build_model:

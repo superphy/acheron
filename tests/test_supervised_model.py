@@ -58,6 +58,21 @@ def test_make_split():
     for col in split_df.columns:
         assert(np.sum(split_df[col]) == 2)
 
+
+    dup_label = pd.DataFrame(
+        data = [[0,0],
+                [0,1],
+                [1,0],
+                [1,1],
+                [0,0]],
+        index = ['SAMN00000001','SAMN00000002','SAMN00000003','SAMN00000004','SAMN00000004'],
+        columns = ['first','second'])
+
+    mask = supervised_model.make_mask(dup_label, 2)
+    split = supervised_model.make_split(dup_label, mask, 2, ['SAMN00000001','SAMN00000002','SAMN00000003','SAMN00000004'])
+
+    assert len(split.index) == 4
+
 def test_apply_mask():
     features = pd.DataFrame(
         data = [[0,1,2],[3,4,5],[6,7,8]],
@@ -152,7 +167,7 @@ def test_split_data():
     cv_folds = 5
 
     # cv split
-    x_train, y_train, x_test, y_test = supervised_model.split_data(features, labels, split, attribute, False, fold, cv_folds)
+    x_train, y_train, x_test, y_test = supervised_model.split_data(features, labels[attribute], split, attribute, False, fold, cv_folds)
     assert x_train.shape == (4, 3)
     assert y_train.shape == (4,)
     assert x_test.shape == (1, 3)
@@ -161,7 +176,7 @@ def test_split_data():
     assert 'SAMN00000001' in x_test.index
 
     # nested cv split
-    x_train, y_train, x_val, y_val, x_test, y_test = supervised_model.split_data(features, labels, split, attribute, True, fold, cv_folds)
+    x_train, y_train, x_val, y_val, x_test, y_test = supervised_model.split_data(features, labels[attribute], split, attribute, True, fold, cv_folds)
     assert x_train.shape == (3, 3)
     assert y_train.shape == (3,)
     assert x_test.shape == (1, 3)
