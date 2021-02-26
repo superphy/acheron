@@ -142,9 +142,10 @@ def load_data(dataset_name, label_name, trial, type, num_feats, k, attribute):
 def train_model(features, label, model_type, num_classes):
     """
     Converts feature and label matrices in a trained model
+    Sci-kit models are at the end, as they share a fit method
     """
-    #num_classes = len(Counter(label).keys())
 
+    # XGBoost
     if model_type.upper() in ['XGB', 'XGBOOST']:
         if num_classes == 2:
             objective = 'binary:logistic'
@@ -160,12 +161,152 @@ def train_model(features, label, model_type, num_classes):
         booster = xgb.train(params, xgb_matrix)
         return booster
 
+    # Artificial Neural Network
+    elif model_type.upper() in ['ANN']:
+        from keras.utils import np_utils, to_categorical
+        from keras.layers.core import Dense, Dropout, Activation
+        from keras.models import Sequential
+        from keras.utils import np_utils, to_categorical
+        from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+
+        cat_labels = to_categorical(labels, num_classes)
+
+        patience = 16
+        early_stop = EarlyStopping(monitor='loss', patience=patience, verbose=1, min_delta=0.005, mode='auto')
+        reduce_LR = ReduceLROnPlateau(monitor='loss', factor= 0.1, patience=(patience/2), verbose = 1, min_delta=0.005,mode = 'auto', cooldown=0, min_lr=0)
+
+        num_feats = len(features.columns)
+        model = Sequential()
+        model.add(Dense(int(((num_feats+num_classes)/2)),activation='relu',input_dim=(num_feats)))
+        model.add(Dropout(0.5))
+        model.add(Dense(num_classes, kernel_initializer='uniform', activation='softmax'))
+
+        if num_classes == 2:
+            loss = "binary_crossentropy"
+        else:
+            loss = "poisson"
+
+        model.compile(loss=loss, metrics=['accuracy'], optimizer='adam')
+        model.fit(features.values, cat_labels, epochs=100, verbose=1, callbacks=[early_stop, reduce_LR])
+        return model
+
+    # Support Vector Classifier
+    # https://scikit-learn.org/stable/modules/svm.html#classification
+    if model_type.upper() in ['SVC']:
+        from sklearn import svm
+        model = svm.SVC()
+
+    # Support Vector Regressor
+    # https://scikit-learn.org/stable/modules/svm.html#regression
+    elif model_type.upper() in ['SVR']:
+        from sklearn import svm
+        model = svm.SVR()
+
+    # Stochastic Gradient Descent Classifier
+    # https://scikit-learn.org/stable/modules/sgd.html#classification
+    elif model_type.upper() in ['SGDC']:
+        from sklearn.linear_model import SGDClassifier
+        model = SGDClassifier(loss="hinge", penalty="l2", max_iter=25)
+
+    # Perceptron
+    # https://scikit-learn.org/stable/modules/linear_model.html#perceptron
+    elif model_type.upper() in ['PERC']:
+        from sklearn.linear_model import SGDClassifier
+        model = SGDClassifier(loss="perceptron", eta0=1, learning_rate="constant", penalty=None)
+
+    # Passive Aggressive Algorithms
+    # https://scikit-learn.org/stable/modules/linear_model.html#passive-aggressive-algorithms
+    # https://www.geeksforgeeks.org/passive-aggressive-classifiers
+    elif model_type.upper() in ['PAC']:
+        from sklearn.linear_model import PassiveAggressiveClassifier
+        model = PassiveAggressiveClassifier(max_iter=100)
+
+    # Nearest Neighbours Classifier
+    # https://scikit-learn.org/stable/modules/neighbors.html#nearest-neighbors-classification
+    elif model_type.upper() in ['NNC']:
+        from sklearn.neighbors import KNeighborsClassifier
+        model = KNeighborsClassifier(n_neighbors=3)
+
+    # Nearest Neighbours Regressor
+    # https://scikit-learn.org/stable/modules/neighbors.html#nearest-neighbors-regression
+    elif model_type.upper() in ['NNR']:
+        from sklearn.neighbors import KNeighborsRegressor
+        model = KNeighborsRegressor(n_neighbors=3)
+
+    # Gaussian Naive Bayes
+    # https://scikit-learn.org/stable/modules/naive_bayes.html#gaussian-naive-bayes
+    elif model_type.upper() in ['GNB']:
+        from sklearn.naive_bayes import GaussianNB
+        model = GaussianNB()
+
+    # Multinomial Naive Bayes
+    # https://scikit-learn.org/stable/modules/naive_bayes.html#multinomial-naive-bayes
+    elif model_type.upper() in ['MNB']:
+        from sklearn.naive_bayes import MultinomialNB
+        model = MultinomialNB()
+
+    # Categorical Naive Bayes
+    # https://scikit-learn.org/stable/modules/naive_bayes.html#categorical-naive-bayes
+    elif model_type.upper() in ['CNB']:
+        from sklearn.naive_bayes import CategoricalNB
+        model = CategoricalNB()
+
+    # Decision Tree Classifier
+    # https://scikit-learn.org/stable/modules/tree.html#classification
+    elif model_type.upper() in ['DTC']:
+        from sklearn import tree
+        model = tree.DecisionTreeClassifier()
+
+    # Decision Tree Regressor
+    # https://scikit-learn.org/stable/modules/tree.html#regression
+    elif model_type.upper() in ['DTR']:
+        from sklearn import tree
+        model = tree.DecisionTreeRegressor()
+
+    # AdaBoost
+    # https://scikit-learn.org/stable/modules/ensemble.html#adaboost
+    elif model_type.upper() in ['ADA']:
+        from sklearn.ensemble import AdaBoostClassifier
+        model = AdaBoostClassifier()
+
+    # Gradient Boosted Decision Trees
+    # https://scikit-learn.org/stable/modules/ensemble.html#gradient-tree-boosting
+    elif model_type.upper() in ['GBDT']:
+        from sklearn.ensemble import GradientBoostingClassifier
+        model = GradientBoostingClassifier()
+
+    # Multi-layer Perceptron Classifier
+    # https://scikit-learn.org/stable/modules/neural_networks_supervised.html#multi-layer-perceptron
+    elif model_type.upper() in ['MLPC']:
+        from sklearn.neural_network import MLPClassifier
+        model = MLPClassifier()
+
     else:
         raise Exception("model type {} not defined".format(model_type))
+
+    model.fit(features.values, label)
+    return model
 
 def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
     """
     Trains a hyperparameter optimized model
+    """
+    """
+    # Minimal Cost-Complexity Pruning
+    # This model might overfit if the training data is used to determine pruning path (unknown)
+    # Look at hyperparam optimizations for nested cross validation
+    # https://scikit-learn.org/stable/modules/tree.html#minimal-cost-complexity-pruning
+    elif model_type.upper() in ['MCCP']:
+        from sklearn import tree
+        model = tree.DecisionTreeClassifier()
+        path = model.cost_complexity_pruning_path(features.values, labels)
+        ccp_alphas, impurities = path.ccp_alphas, path.impurities
+        models = []
+        for ccp_alpha in ccp_alphas:
+            clf = DecisionTreeClassifier(ccp_alpha=ccp_alpha)
+            clf.fit(features.values, labels)
+            clfs.append(clf)
+        # now use validation set to see which model did best, use that alpha to train final model
     """
     pass
 
