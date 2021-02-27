@@ -287,6 +287,54 @@ def train_model(features, label, model_type, num_classes):
     model.fit(features.values, label)
     return model
 
+def hyperas_model(x_train, y_train, x_test, y_test):
+    """
+    This function is not python, it is parameterless placeholder of a neural network
+    DO NOT CALL THIS FUNCTION, its is for use of hyperas only!!!
+    It cannot be importated from another function without error.
+    """
+    from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+    from hyperas.distributions import choice, uniform
+    from keras.models import Sequential
+    from keras.layers.core import Dense, Dropout, Activation
+
+    patience = {{choice([4,8,12,16])}}
+    early_stop = EarlyStopping(monitor='loss', patience=patience, verbose=0, min_delta=0.005, mode='auto')
+    reduce_LR = ReduceLROnPlateau(monitor='loss', factor= 0.1, patience=(patience/2), verbose = 0, min_delta=0.005,mode = 'auto', cooldown=0, min_lr=0)
+
+    model = Sequential()
+
+    # how many hidden layers are in our model
+    num_layers = {{choice(['zero', 'one', 'two', 'three', 'four', 'five'])}}
+
+    if(num_layers == 'zero'):
+        model.add(Dense(num_classes,activation='softmax',input_dim=(x_train.shape[1])))
+    else:
+        # this isnt a for loop because each variable needs its own name to be independently trained
+        if (num_layers in ['one','two','three','four','five']):
+            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}}),activation='relu',input_dim=(x_train.shape[1])))
+            model.add(Dropout({{uniform(0,1)}}))
+        if (num_layers in ['two','three','four','five']):
+            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
+            model.add(Dropout({{uniform(0,1)}}))
+        if (num_layers in ['three','four','five']):
+            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
+            model.add(Dropout({{uniform(0,1)}}))
+        if (num_layers in ['four','five']):
+            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
+            model.add(Dropout({{uniform(0,1)}}))
+        if (num_layers == 'five'):
+            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
+            model.add(Dropout({{uniform(0,1)}}))
+
+        model.add(Dense(num_classes, kernel_initializer='uniform', activation='softmax'))
+
+    model.compile(loss='poisson', metrics=['accuracy'], optimizer='adam')
+    model.fit(x_train, y_train, epochs=100, verbose=0, batch_size=6000, callbacks=[early_stop, reduce_LR])
+
+    score, acc = model.evaluate(x_test, y_test, verbose=0)
+    return {'loss': -acc, 'status': STATUS_OK, 'model': model}
+
 def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
     """
     Trains a hyperparameter optimized model
@@ -310,7 +358,7 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
 
     elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
         best_run, best_model = optim.minimize(
-            model=hyp.create_model(x_train, y_train, x_val, y_val),
+            model=hyperas_model(x_train, y_train, x_val, y_val),
             data=(x_train, y_train, x_val, y_val),
             algo=tpe.suggest,
             max_evals=10,
