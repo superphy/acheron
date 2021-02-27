@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, mean_squared_error
 from collections import Counter
 import math
 import xgboost as xgb
@@ -291,10 +291,39 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
     """
     Trains a hyperparameter optimized model
     """
+    from hyperopt import hp, fmin, tpe, STATUS_OK, STATUS_FAIL, Trials
+
+    # https://towardsdatascience.com/an-example-of-hyperparameter-optimization-on-xgboost-lightgbm-and-catboost-using-hyperopt-12bc41a271e
+    # Search Space Subject to Change!!
+    if model_type.upper() in ['XGB','XGBOOST']:
+        params = {
+                'learning_rate':    hp.choice('learning_rate',    np.arange(0.05, 0.31, 0.05)),
+                'max_depth':        hp.choice('max_depth',        np.arange(1, 8, 1, dtype=int)),
+                'min_child_weight': hp.choice('min_child_weight', np.arange(1, 8, 1, dtype=int)),
+                'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.3, 0.8, 0.1)),
+                'subsample':        hp.uniform('subsample', 0.8, 1),
+                'n_estimators':     100,
+                }
+        pass
+
+    elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
+        from acheron.workflows import hyp
+
+        best_run, best_model = optim.minimize(
+            model=hyp.create_model,
+            data=(x_train, y_train, x_test, y_test),
+            algo=tpe.suggest,
+            max_evals=10,
+            trials=Trials(),
+            keep_temp=True)
+
+        return best_model, best_run
+
+    else:
+        raise Exception("model type {} not defined".format(model_type))
+
     """
     # Minimal Cost-Complexity Pruning
-    # This model might overfit if the training data is used to determine pruning path (unknown)
-    # Look at hyperparam optimizations for nested cross validation
     # https://scikit-learn.org/stable/modules/tree.html#minimal-cost-complexity-pruning
     elif model_type.upper() in ['MCCP']:
         from sklearn import tree
@@ -308,7 +337,6 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
             clfs.append(clf)
         # now use validation set to see which model did best, use that alpha to train final model
     """
-    pass
 
 def predict(model, features, model_type):
     """
