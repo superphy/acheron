@@ -169,7 +169,7 @@ def train_model(features, label, model_type, num_classes):
         from keras.utils import np_utils, to_categorical
         from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
-        cat_labels = to_categorical(labels, num_classes)
+        cat_labels = to_categorical(label, num_classes)
 
         patience = 16
         early_stop = EarlyStopping(monitor='loss', patience=patience, verbose=1, min_delta=0.005, mode='auto')
