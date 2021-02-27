@@ -310,7 +310,7 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
         from acheron.workflows import hyp
 
         best_run, best_model = optim.minimize(
-            model=hyp.create_model,
+            model=hyp.create_model(x_train, y_train, x_test, y_test),
             data=(x_train, y_train, x_test, y_test),
             algo=tpe.suggest,
             max_evals=10,
@@ -709,7 +709,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
         to be loaded as efficiently as possible and therefore different scope as other dataset.
         """
 
-        if test in [train,validation]:
+        if test in [train,validation] and test != 'none':
             raise Exception("You cannot use the testing set for training or validation")
         if validation == 'none' and test == 'none':
             """
@@ -720,7 +720,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             for fold in range(cv_folds):
 
                 x_train, y_train, x_val, y_val, x_test, y_test = split_data(
-                    features, labels, split, attribute, do_hyp, fold, cv_folds)
+                    x, y, split, attribute, do_hyp, fold, cv_folds)
 
                 x_train = select_features(x_train, y_train, num_feats, False)
                 x_val = select_features(x_val,'dont need',num_feats, x_train.columns)

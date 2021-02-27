@@ -10,7 +10,7 @@ jobs:
             command: |
               conda update conda
               conda env create -f data/envi.yaml
-              source activate ach.0.3
+              source activate ach.0.4
               pip install -e .
               pytest tests
 

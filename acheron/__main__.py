@@ -119,7 +119,7 @@ def parse_arguments():
     test_params.add_argument('--columns', default='none',help="subset of columns in label")
     test_params.add_argument('-m', '--model', default='XGB', choices = ['XGB','SVM','ANN','kSNP3'],
                     help="The model you would like to build")
-    test_params.add_argument('-p', '--hyperparam', default=False,
+    test_params.add_argument('-p', '--hyperparam',default=False, action='store_true',
                     help="Enable hyperparameter optimizations and nest the cross validations")
     test_params.add_argument('-a', '--attribute',required=True,
                     help="Which attribute to train the model on (column of label)")
