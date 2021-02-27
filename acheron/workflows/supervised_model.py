@@ -310,8 +310,8 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
 
     elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
         best_run, best_model = optim.minimize(
-            model=hyp.create_model(x_train, y_train, x_test, y_test),
-            data=(x_train, y_train, x_test, y_test),
+            model=hyp.create_model(x_train, y_train, x_val, y_val),
+            data=(x_train, y_train, x_val, y_val),
             algo=tpe.suggest,
             max_evals=10,
             trials=Trials(),
