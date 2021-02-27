@@ -21,11 +21,14 @@ from keras.models import Sequential, load_model
 from keras.utils import np_utils, to_categorical
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
-from keras import backend as K
-K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=16, inter_op_parallelism_threads=16)))
+#from keras import backend as K
+#K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=16, inter_op_parallelism_threads=16)))
+
+from hyperas import optim
+from hyperas.distributions import choice, uniform
 
 from sklearn import metrics
-from sklearn.externals import joblib
+import joblib
 from sklearn.model_selection import StratifiedKFold, StratifiedShuffleSplit
 from sklearn.feature_selection import SelectKBest, f_classif
 

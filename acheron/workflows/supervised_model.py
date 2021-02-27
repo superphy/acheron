@@ -292,6 +292,8 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
     Trains a hyperparameter optimized model
     """
     from hyperopt import hp, fmin, tpe, STATUS_OK, STATUS_FAIL, Trials
+    from acheron.workflows import hyp
+    from hyperas import optim
 
     # https://towardsdatascience.com/an-example-of-hyperparameter-optimization-on-xgboost-lightgbm-and-catboost-using-hyperopt-12bc41a271e
     # Search Space Subject to Change!!
@@ -307,8 +309,6 @@ def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
         pass
 
     elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
-        from acheron.workflows import hyp
-
         best_run, best_model = optim.minimize(
             model=hyp.create_model(x_train, y_train, x_test, y_test),
             data=(x_train, y_train, x_test, y_test),
