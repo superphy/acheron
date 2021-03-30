@@ -162,7 +162,7 @@ def train_model(features, label, model_type, num_classes):
         return booster
 
     # Artificial Neural Network
-    elif model_type.upper() in ['ANN']:
+    elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
         from keras.utils import np_utils, to_categorical
         from keras.layers.core import Dense, Dropout, Activation
         from keras.models import Sequential
@@ -287,88 +287,83 @@ def train_model(features, label, model_type, num_classes):
     model.fit(features.values, label)
     return model
 
-def hyperas_model(x_train, y_train, x_test, y_test):
-    """
-    This function is not python, it is parameterless placeholder of a neural network
-    DO NOT CALL THIS FUNCTION, its is for use of hyperas only!!!
-    It cannot be importated from another function without error.
-    """
-    from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-    from hyperas.distributions import choice, uniform
-    from keras.models import Sequential
-    from keras.layers.core import Dense, Dropout, Activation
-
-    patience = {{choice([4,8,12,16])}}
-    early_stop = EarlyStopping(monitor='loss', patience=patience, verbose=0, min_delta=0.005, mode='auto')
-    reduce_LR = ReduceLROnPlateau(monitor='loss', factor= 0.1, patience=(patience/2), verbose = 0, min_delta=0.005,mode = 'auto', cooldown=0, min_lr=0)
-
-    model = Sequential()
-
-    # how many hidden layers are in our model
-    num_layers = {{choice(['zero', 'one', 'two', 'three', 'four', 'five'])}}
-
-    if(num_layers == 'zero'):
-        model.add(Dense(num_classes,activation='softmax',input_dim=(x_train.shape[1])))
-    else:
-        # this isnt a for loop because each variable needs its own name to be independently trained
-        if (num_layers in ['one','two','three','four','five']):
-            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}}),activation='relu',input_dim=(x_train.shape[1])))
-            model.add(Dropout({{uniform(0,1)}}))
-        if (num_layers in ['two','three','four','five']):
-            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
-            model.add(Dropout({{uniform(0,1)}}))
-        if (num_layers in ['three','four','five']):
-            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
-            model.add(Dropout({{uniform(0,1)}}))
-        if (num_layers in ['four','five']):
-            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
-            model.add(Dropout({{uniform(0,1)}}))
-        if (num_layers == 'five'):
-            model.add(Dense(int({{uniform(num_classes,x_train.shape[1])}})))
-            model.add(Dropout({{uniform(0,1)}}))
-
-        model.add(Dense(num_classes, kernel_initializer='uniform', activation='softmax'))
-
-    model.compile(loss='poisson', metrics=['accuracy'], optimizer='adam')
-    model.fit(x_train, y_train, epochs=100, verbose=0, batch_size=6000, callbacks=[early_stop, reduce_LR])
-
-    score, acc = model.evaluate(x_test, y_test, verbose=0)
-    return {'loss': -acc, 'status': STATUS_OK, 'model': model}
-
 def train_hyper_model(x_train, y_train, x_val, y_val, model_type, num_classes):
     """
     Trains a hyperparameter optimized model
     """
-    from hyperopt import hp, fmin, tpe, STATUS_OK, STATUS_FAIL, Trials
     from acheron.workflows import hyp
-    from hyperas import optim
+
+    best_model, best_params = hyp.get_best(x_train, y_train, x_val, y_val, model_type, num_classes)
+    return best_model, best_params
+
+
+    """
+    Unsure if saving required, to do without
+
+
+    import time
+    from random import seed
+    from random import random
+
+    seed(time.time())
+    test_id = random()
+    save_path = "data/hyp_data/{}/".format(test_id)
+    os.makedirs(save_path, exist_ok=False)
+    for i, data_chunk in enumerate([x_train, y_train, x_val, y_val]):
+        if i%2 == 0:
+            data_chunk.to_pickle("{}{}.pkl".format(save_path,i))
+        else:
+            np.save("{}{}.npy".format(save_path,i),data_chunk)
+
+    trials = Trials()
 
     # https://towardsdatascience.com/an-example-of-hyperparameter-optimization-on-xgboost-lightgbm-and-catboost-using-hyperopt-12bc41a271e
     # Search Space Subject to Change!!
     if model_type.upper() in ['XGB','XGBOOST']:
-        params = {
-                'learning_rate':    hp.choice('learning_rate',    np.arange(0.05, 0.31, 0.05)),
-                'max_depth':        hp.choice('max_depth',        np.arange(1, 8, 1, dtype=int)),
-                'min_child_weight': hp.choice('min_child_weight', np.arange(1, 8, 1, dtype=int)),
-                'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.3, 0.8, 0.1)),
-                'subsample':        hp.uniform('subsample', 0.8, 1),
-                'n_estimators':     100,
-                }
-        pass
+        search_params = {
+            'learning_rate':    hp.choice('learning_rate',    np.arange(0.05, 0.31, 0.05)),
+            'max_depth':        hp.choice('max_depth',        np.arange(1, 8, 1, dtype=int)),
+            'min_child_weight': hp.choice('min_child_weight', np.arange(1, 8, 1, dtype=int)),
+            'colsample_bytree': hp.choice('colsample_bytree', np.arange(0.3, 0.8, 0.1)),
+            'subsample':        hp.uniform('subsample', 0.8, 1),
+            'num_class':        num_classes,
+            'test_id':          test_id
+            }
+
+        best_index = fmin(
+            fn=hyp.xgboost_objective, space=search_params,
+            algo=tpe.suggest, max_evals=100, trials=trials)
+
+        best_params = space_eval(search_params, best_index)
+
+        if num_classes == 2:
+            best_params['objective'] = 'binary:logistic'
+        else:
+            best_params['objective'] = 'multi:softmax'
+
+        best_params['n_estimators'] = 10
+        best_params['num_class'] = num_classes
+
+        xgb_matrix = xgb.DMatrix(x_train.values, y_train, feature_names=x_train.columns)
+        booster = xgb.train(best_params, xgb_matrix)
+        return booster, best_params
+
 
     elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
+        from acheron.workflows import hyp
         best_run, best_model = optim.minimize(
-            model=hyperas_model(x_train, y_train, x_val, y_val),
-            data=(x_train, y_train, x_val, y_val),
+            model=hyp.create_model,
+            data=load_hyp_data,
             algo=tpe.suggest,
             max_evals=10,
             trials=Trials(),
             keep_temp=True)
 
         return best_model, best_run
+    """
 
-    else:
-        raise Exception("model type {} not defined".format(model_type))
+    #else:
+        #raise Exception("model type {} not defined".format(model_type))
 
     """
     # Minimal Cost-Complexity Pruning
@@ -393,8 +388,19 @@ def predict(model, features, model_type):
     if model_type.upper() in ['XGB', 'XGBOOST']:
         xgb_matrix = xgb.DMatrix(features.values, feature_names = features.columns)
         return [round(i) for i in model.predict(xgb_matrix, validate_features=True)]
+
+    elif model_type.upper() in ['ANN','KERAS','TF','TENSORFLOW']:
+
+        # This will be in categorical form, need to decode it
+        prediction = model.predict_classes(features)
+        #return np.argmax(prediction, axis=1)
+        return prediction
+
     else:
-        raise Exception("model type {} not defined".format(model_type))
+        try:
+            return [round(i) for i in model.predict(features)]
+        except:
+            raise Exception("model type {} not defined".format(model_type))
 
 def evaluate_model(predicted, actual, model_type, dilutions, attribute, encoder):
     """
@@ -694,6 +700,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     final_models = []
     final_features = []
     final_labels = []
+    final_params = []
 
 
     if not do_hyp:
@@ -777,10 +784,11 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
                 encoded_y_train = [train_encoder[attribute][i] for i in y_train]
                 encoded_y_val = [train_encoder[attribute][i] for i in y_val]
 
-                model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+                model, best_params = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
                 final_models.append(model)
                 final_features.append(x_test)
                 final_labels.append(y_test)
+                final_params.append(best_params)
 
         elif validation == 'none':
             """
@@ -805,10 +813,11 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
                 encoded_y_train = [train_encoder[attribute][i] for i in y_train]
                 encoded_y_val = [train_encoder[attribute][i] for i in y_val]
 
-                model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+                model, best_params = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
                 final_models.append(model)
                 final_features.append(x_test)
                 final_labels.append(y_test)
+                final_params.append(best_params)
 
         elif test == 'none':
             """
@@ -831,10 +840,11 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
                 encoded_y_train = [train_encoder[attribute][i] for i in y_train]
                 encoded_y_val = [train_encoder[attribute][i] for i in y_val]
 
-                model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+                model, best_params = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
                 final_models.append(model)
                 final_features.append(x_test)
                 final_labels.append(y_test)
+                final_params.append(best_params)
         else:
             # All datasets passed
             if train == validation:
@@ -854,10 +864,11 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
             encoded_y_train = [train_encoder[attribute][i] for i in y_train]
             encoded_y_val = [train_encoder[attribute][i] for i in y_val]
 
-            model = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
+            model, best_params = train_hyper_model(x_train, encoded_y_train, x_val, encoded_y_val, model_type, num_classes)
             final_models.append(model)
             final_features.append(x_test)
             final_labels.append(y_test)
+            final_params.append(best_params)
 
     trained_models = []
     predicted_dfs = []
@@ -893,7 +904,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     # mean prec_recall_dfs
     prec_recall_dfs = mean_prec_recall(prec_recall_dfs)
 
-    return trained_models, predicted_dfs, summaries, prec_recall_dfs
+    return trained_models, predicted_dfs, summaries, prec_recall_dfs, final_params
 
 def manual_call(arguments):
     # attr = getattr(arguments,arg)

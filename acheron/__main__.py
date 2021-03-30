@@ -117,7 +117,7 @@ def parse_arguments():
     test_params.add_argument('-l', '--label', required=True,
                     help="what labels to use, created by `acheron build label ...` ")
     test_params.add_argument('--columns', default='none',help="subset of columns in label")
-    test_params.add_argument('-m', '--model', default='XGB', choices = ['XGB','SVM','ANN','kSNP3'],
+    test_params.add_argument('-m', '--model', default='XGB', #choices = ['XGB','SVM','ANN','kSNP3'],
                     help="The model you would like to build")
     test_params.add_argument('-p', '--hyperparam',default=False, action='store_true',
                     help="Enable hyperparameter optimizations and nest the cross validations")

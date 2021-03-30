@@ -81,12 +81,16 @@ rule build_model:
     threads:
         8
     run:
-        models, predicted_df, summary, prec_recall = supervised_model.make_model(config['model'],config['train'],
+        models, predicted_df, summary, prec_recall, params = supervised_model.make_model(config['model'],config['train'],
             config['test'],config['validation'],config['label'],config['type'],
             config['attribute'],config['num_features'],config['hyperparam'],
             config['cv'],wildcards.trl)
 
         out_dir = '/'.join(output[0].split('/')[:-1])
+
+        for fold_num, params_set in enumerate(params):
+            joblib.dump(params_set, "{}/params{}.joblib".format(out_dir,fold_num))
+
         for fold_num, model in enumerate(models):
             joblib.dump(model, "{}/model{}.joblib".format(out_dir,fold_num))
         predicted_df.to_pickle(out_dir+"/predictions.df")
