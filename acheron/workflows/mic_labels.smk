@@ -83,17 +83,17 @@ def transform(input, log, output,
 rule all:
   input:
     "data/{}/labels/{}.df".format(config['dataset'],config['name']),
-    "data/label_modules/mic/mic_class_order_dict.pkl"
+    "data/label_modules/mic/{}_mic_class_order_dict.pkl".format(config['pathogen'])
 
 rule make_mic_df:
     input:
         config['path'],
-        "data/label_modules/mic/class_ranges.yaml"
+        "data/label_modules/mic/{}_class_ranges.yaml".format(config['pathogen'])
     log:
         "logs/{}/{}_mic.log".format(config['dataset'], config['name'])
     output:
         "data/{}/labels/{}.df".format(config['dataset'],config['name']),
-        "data/label_modules/mic/mic_class_order_dict.pkl"
+        "data/label_modules/mic/{}_mic_class_order_dict.pkl".format(config['pathogen'])
     run:
         if config['columns'].lower() == 'all':
             headers =['all',config['key']]

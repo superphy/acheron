@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 
 from hyperopt import hp, fmin, tpe, STATUS_OK, STATUS_FAIL, Trials, space_eval
 

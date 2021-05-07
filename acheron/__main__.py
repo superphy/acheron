@@ -47,11 +47,11 @@ def main():
             if arguments.module != 'custom':
                 build_module_label(
                     arguments.dataset, arguments.module, arguments.name,
-                    arguments.columns, arguments.path, arguments.key)
+                    arguments.columns, arguments.path, arguments.key, arguments.pathogen)
             else:
                 build_custom_label(
                     arguments.dataset, arguments.name, arguments.columns,
-                    arguments.path, arguments.key)
+                    arguments.path, arguments.key, argument.pathogen)
 
         elif arguments.build_command == 'model':
             if arguments.manual == False:
@@ -194,6 +194,8 @@ def parse_arguments():
                     help="path to xlsx, csv, or tsv containing label data")
     label_parser.add_argument('-d', '--dataset', required = True,
                     help="Name of dataset, what the name of the folder containing sequences is named")
+    label_parser.add_argument('--pathogen', default='Salmonella',
+                    help="What MIC ranges are allowed when binning, uses Salmonella's MIC bins if undeclared")
 
 
     model_parser = build_subparsers.add_parser('model', parents=[parent_parser,test_params],

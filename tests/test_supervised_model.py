@@ -13,7 +13,7 @@ def setup_data():
     meta_path = "data/acheron_test_samples/labels/test_metadata.csv"
 
     label.build_module_label('acheron_test_samples','MIC', 'test_MIC',
-    'AMP_MIC,CIP_MIC,SXT_MIC',meta_path, 'names')
+    'AMP_MIC,CIP_MIC,SXT_MIC',meta_path, 'names', 'Salmonella')
 
     kmer.build_kmer_matrix('acheron_test_samples', 11, 1, 'none')
 

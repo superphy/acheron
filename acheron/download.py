@@ -162,10 +162,11 @@ def download_antibiogram(database, pathogen, email, antimicrobial, path, use_loc
     antimicrobials = ['amoxicillin/clavulanic acid', 'ampicillin', 'azithromycin',
     'cefoxitin', 'ceftiofur', 'ceftriaxone', 'chloramphenicol', 'ciprofloxacin',
     'gentamicin', 'nalidixic acid', 'streptomycin', 'sulfisoxazole', 'tetracycline',
-    'trimethoprim/sulfamethoxazole','kanamycin']
+    'trimethoprim/sulfamethoxazole','kanamycin', 'clindamycin', 'erythromycin',
+    'florfenicol', 'telithromycin']
 
     mics = ['AMC','AMP','AZM','FOX','TIO','CRO','CHL','CIP','GEN','NAL','STR','FIS',
-    'TET','SXT','KAN']
+    'TET','SXT','KAN', 'CLI','ERY', 'FLO', 'TEL']
 
     if(check_date):
         for db_check, db_path in [["PATRIC","data/PATRIC_genomes_AMR.txt"],["NCBI","data/NCBI_{}_antibiogram.csv".format(pathogen)]]:

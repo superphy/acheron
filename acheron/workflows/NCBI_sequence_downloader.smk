@@ -21,8 +21,11 @@ seq_sources = sequence_downloader.find_seq_sources(data)
 dl_lists = sequence_downloader.download_sources(seq_sources)
 
 #List of ids to be downloaded
-ids = list(dl_lists['NCBI'])
-
+try:
+    ids = list(dl_lists['NCBI'])
+except:
+    print("No samples to be downloaded from NCBI")
+    sys.exit()
 # THIS SECTION DEFAULTS YES AND SKIPS FOR SLURM COMPATABILITY
 try:
     cont = click.confirm("You are about to download {} sequences from the NCBI, would you like to continue?".format(len(ids)),

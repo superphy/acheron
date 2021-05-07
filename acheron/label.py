@@ -5,7 +5,7 @@ import pickle
 
 from acheron.workflows import labeler
 
-def build_module_label(dataset, module, name, columns, path, key):
+def build_module_label(dataset, module, name, columns, path, key, pathogen):
     # call to snakemake subworkflow in workflows
     print("Building labels named {} for dataset {} for columns {} in {} on \
     key={} based on module {}".format(
@@ -18,15 +18,15 @@ def build_module_label(dataset, module, name, columns, path, key):
 
 
     os.system("snakemake -s {} -j {} \
-    --config path={} dataset={} columns={} key={} name={}".format(
-    workflow_smk, 1, path, dataset, columns, key, name))
+    --config path={} dataset={} columns={} key={} name={} pathogen={}".format(
+    workflow_smk, 1, path, dataset, columns, key, name, pathogen))
 
     # TODO skip on continuous labels
-    encoder = labeler.build_encoder(dataset,name,module)
+    encoder = labeler.build_encoder(dataset,name,module,pathogen)
     with open("data/{}/labels/{}_encoder.pkl".format(dataset, name),'wb') as pickler:
         pickle.dump(encoder, pickler, protocol=pickle.HIGHEST_PROTOCOL)
 
-def build_custom_label(dataset, name, columns, path, key):
+def build_custom_label(dataset, name, columns, path, key, pathogen):
     print("Building custom labels named {} for dataset {} for columns {} in {} \
     on key={}".format(
         name, dataset, columns, path, key))
@@ -41,6 +41,7 @@ def build_custom_label(dataset, name, columns, path, key):
     data.to_pickle("data/{}/labels/{}.df".format(dataset, name))
 
     # TODO skip on continuous labels
-    encoder = labeler.build_encoder(dataset,name,'none')
+
+    encoder = labeler.build_encoder(dataset,name,'none', pathogen)
     with open("data/{}/labels/{}_encoder.pkl".format(dataset, name),'wb') as pickler:
         pickle.dump(encoder, pickler, protocol=pickle.HIGHEST_PROTOCOL)

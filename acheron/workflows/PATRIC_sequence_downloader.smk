@@ -22,7 +22,11 @@ seq_sources = sequence_downloader.find_seq_sources(data)
 dl_lists = sequence_downloader.download_sources(seq_sources)
 
 # List of biosamples to be downloaded
-biosamples = list(dl_lists['PATRIC'])
+try:
+    biosamples = list(dl_lists['PATRIC'])
+except:
+    print("No samples to be downloaded from PATRIC")
+    sys.exit()
 biosamples = [i for i in biosamples if len(str(i)) > 1]
 
 # THIS SECTION DEFAULTS YES AND SKIPS FOR SLURM COMPATABILITY

@@ -7,7 +7,7 @@ meta_path = "data/acheron_test_samples/labels/test_metadata.csv"
 
 def test_build_custom_label():
     label.build_custom_label('acheron_test_samples','test_SIR', 'AMP_SIR,CIP_SIR',
-    meta_path, 'names')
+    meta_path, 'names', 'Salmonella')
 
     df = pd.read_pickle("data/acheron_test_samples/labels/test_SIR.df")
 
@@ -20,7 +20,7 @@ def test_build_custom_label():
 
 def test_build_module_label():
     label.build_module_label('acheron_test_samples','MIC', 'test_MIC',
-    'AMP_MIC,CIP_MIC,SXT_MIC',meta_path, 'names')
+    'AMP_MIC,CIP_MIC,SXT_MIC',meta_path, 'names', 'Salmonella')
 
     df = pd.read_pickle("data/acheron_test_samples/labels/test_MIC.df")
 

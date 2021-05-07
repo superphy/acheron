@@ -49,13 +49,13 @@ def test_get_valid_columns():
 def test_build_encoder():
     dataset = 'acheron_test_samples'
     name = 'mics'
-    mic_encoder = labeler.build_encoder(dataset,name,'MIC')
-    assert len(mic_encoder.keys()) == 15
+    mic_encoder = labeler.build_encoder(dataset,name,'MIC', 'Salmonella')
+    assert len(mic_encoder.keys()) == 3
     assert mic_encoder['AMP']['<=1.0000'] == 0
     assert mic_encoder['CIP']['0.0600'] == 2
 
     name = 'test_SIR'
-    general_encoder = labeler.build_encoder(dataset,name,'none')
+    general_encoder = labeler.build_encoder(dataset,name,'none', 'Salmonella')
     assert len(general_encoder.keys()) == 2
     assert general_encoder['AMP_SIR']['S'] == 0
     assert general_encoder['CIP_SIR']['R'] == 1

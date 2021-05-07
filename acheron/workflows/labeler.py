@@ -43,7 +43,7 @@ def get_valid_columns(columns):
 
     return headers
 
-def build_encoder(dataset,name,module):
+def build_encoder(dataset,name,module, pathogen):
     """
     Loads in a label matrix and for each columns, builds an encoder dict
     """
@@ -52,7 +52,7 @@ def build_encoder(dataset,name,module):
     if module == 'MIC':
         # will load data directly from class ranges yaml
 
-        mic_class_dict = joblib.load("data/label_modules/mic/full_mic_class_order_dict.pkl")
+        mic_class_dict = joblib.load("data/label_modules/mic/{}_mic_class_order_dict.pkl".format(pathogen))
 
         for key in mic_class_dict.keys():
             labels = [i for i in mic_class_dict[key]]

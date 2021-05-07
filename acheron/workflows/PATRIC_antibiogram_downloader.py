@@ -54,10 +54,11 @@ def columnize_tsv(df):
     long_names = ['amoxicillin/clavulanic acid', 'ampicillin', 'azithromycin',
     'cefoxitin', 'ceftiofur', 'ceftriaxone', 'chloramphenicol', 'ciprofloxacin',
     'gentamicin', 'nalidixic acid', 'streptomycin', 'sulfisoxazole', 'tetracycline',
-    'trimethoprim/sulfamethoxazole','kanamycin']
+    'trimethoprim/sulfamethoxazole','kanamycin', 'clindamycin', 'erythromycin',
+    'florfenicol', 'telithromycin']
 
     three_letter_codes = ['AMC','AMP','AZM','FOX','TIO','CRO','CHL','CIP','GEN','NAL','STR','FIS',
-    'TET','SXT','KAN']
+    'TET','SXT','KAN', 'CLI','ERY', 'FLO', 'TEL']
 
     abx = set(df['antibiotic'])
     ids = set(df['genome_id'])
