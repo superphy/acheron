@@ -49,7 +49,7 @@ def test_get_valid_columns():
 def test_build_encoder():
     dataset = 'acheron_test_samples'
     name = 'mics'
-    mic_encoder = labeler.build_encoder(dataset,name,'MIC', 'Salmonella')
+    mic_encoder = labeler.build_encoder(dataset,name,'MIC', 'Test')
     assert len(mic_encoder.keys()) == 3
     assert mic_encoder['AMP']['<=1.0000'] == 0
     assert mic_encoder['CIP']['0.0600'] == 2
