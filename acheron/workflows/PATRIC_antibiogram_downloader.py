@@ -51,10 +51,10 @@ def columnize_tsv(df):
     Row 1: pathogen, drug1, drug2
     """
 
-    long_names = ['amoxicillin/clavulanic acid', 'ampicillin', 'azithromycin',
+    long_names = ['amoxicillin_clavulanic_acid', 'ampicillin', 'azithromycin',
     'cefoxitin', 'ceftiofur', 'ceftriaxone', 'chloramphenicol', 'ciprofloxacin',
-    'gentamicin', 'nalidixic acid', 'streptomycin', 'sulfisoxazole', 'tetracycline',
-    'trimethoprim/sulfamethoxazole','kanamycin', 'clindamycin', 'erythromycin',
+    'gentamicin', 'nalidixic_acid', 'streptomycin', 'sulfisoxazole', 'tetracycline',
+    'trimethoprim_sulphamethoxazole','kanamycin', 'clindamycin', 'erythromycin',
     'florfenicol', 'telithromycin']
 
     three_letter_codes = ['AMC','AMP','AZM','FOX','TIO','CRO','CHL','CIP','GEN','NAL','STR','FIS',
@@ -115,6 +115,7 @@ def columnize_tsv(df):
 
         sorted_df = sorted_df.append(to_add_df)
 
+    #print(sorted_df)
     sorted_df = sorted_df.drop(columns=[
         "antibiotic","resistant_phenotype","measurement",
         "measurement_sign","measurement_value","measurement_unit"])

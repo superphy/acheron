@@ -161,3 +161,16 @@ def query_to_df(query, mics, antimicrobials):
         amr_df.insert(loc = 0, column = "run", value = runs)
 
     return amr_df
+
+def remove_non_mic(df):
+    """
+    Certain samples having disc diffusion values instead of MIC,
+    with no metadata indicating this.
+
+    These need to be manually removed and are stored in
+    data/dd_blacklist.npy
+    """
+
+    bl = np.load("data/dd_blacklist.npy", allow_pickle=True)
+
+    return df[~df['BioSample'].isin(bl)]

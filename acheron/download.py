@@ -7,6 +7,7 @@ import re
 
 
 from acheron.workflows.NCBI_antibiogram_downloader import query_to_df
+from acheron.workflows.NCBI_antibiogram_downloader import remove_non_mic
 from acheron.workflows.PATRIC_antibiogram_downloader import download_PATRIC
 
 def are_equal_mic(mic1, mic2):
@@ -159,10 +160,16 @@ def merge_antibiogram(df1, df2):
     return merged_df.reindex(columns = mic_first_order)
 
 def download_antibiogram(database, pathogen, email, antimicrobial, path, use_local, check_date):
-    antimicrobials = ['amoxicillin/clavulanic acid', 'ampicillin', 'azithromycin',
+    ncbi_antimicrobials = ['amoxicillin/clavulanic acid', 'ampicillin', 'azithromycin',
     'cefoxitin', 'ceftiofur', 'ceftriaxone', 'chloramphenicol', 'ciprofloxacin',
     'gentamicin', 'nalidixic acid', 'streptomycin', 'sulfisoxazole', 'tetracycline',
     'trimethoprim/sulfamethoxazole','kanamycin', 'clindamycin', 'erythromycin',
+    'florfenicol', 'telithromycin']
+
+    patric_antimicrobials = ['amoxicillin_clavulanic_acid', 'ampicillin', 'azithromycin',
+    'cefoxitin', 'ceftiofur', 'ceftriaxone', 'chloramphenicol', 'ciprofloxacin',
+    'gentamicin', 'nalidixic_acid', 'streptomycin', 'sulfisoxazole', 'tetracycline',
+    'trimethoprim_sulphamethoxazole','kanamycin', 'clindamycin', 'erythromycin',
     'florfenicol', 'telithromycin']
 
     mics = ['AMC','AMP','AZM','FOX','TIO','CRO','CHL','CIP','GEN','NAL','STR','FIS',
@@ -182,8 +189,8 @@ def download_antibiogram(database, pathogen, email, antimicrobial, path, use_loc
     print("for {} antibiogram data using the email {}\n".format(pathogen, email))
     if(antimicrobial!= 'all'):
         raise Exception("not yet setup for individual abx")
-    else:
-        antimicrobial = antimicrobials
+    #else:
+    #    antimicrobial = antimicrobials
 
     if use_local is None:
         use_local = ['']
@@ -202,7 +209,9 @@ def download_antibiogram(database, pathogen, email, antimicrobial, path, use_loc
             query = "antibiogram[filter] AND {}[organism]".format(pathogen)
             from Bio import Entrez
             Entrez.email = email
-            ncbi_df = query_to_df(query, mics, antimicrobials)
+            ncbi_df = query_to_df(query, mics, ncbi_antimicrobials)
+            if pathogen.upper() == 'ESCHERICHIA':
+                ncbi_df = remove_non_mic(ncbi_df)
             ncbi_df.to_csv("data/NCBI_{}_antibiogram.csv".format(pathogen))
         mergeable_dfs.append(ncbi_df)
 
@@ -215,7 +224,13 @@ def download_antibiogram(database, pathogen, email, antimicrobial, path, use_loc
                 print('PATRIC AMR data not found, please download before passing `use_local`')
                 raise
         else:
-            patric_df = download_PATRIC(pathogen, antimicrobial)
+            try:
+                patric_df = download_PATRIC(pathogen, patric_antimicrobials)
+            except:
+                # Currently having issues with e coli data from PATRIC,
+                # cant debug as ftp site isnt working, will look into this in future releases
+                raise Exception("Unable to pull {} from PATRIC, try again but only using NCBI".format(pathogen))
+
             patric_df.to_csv("data/PATRIC_{}_antibiogram.csv".format(pathogen))
         patric_df.rename(columns = {'biosample_accession':'BioSample'}, inplace = True)
         mergeable_dfs.append(patric_df)

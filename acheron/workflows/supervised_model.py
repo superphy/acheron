@@ -663,6 +663,17 @@ def split_data(features, labels, split, attribute, hyp, fold, num_splits, BLOCK_
 
         return x_train, y_train, x_val, y_val, x_test, y_test
 
+def append_slurm_id(df):
+    """
+    Takes summary df, adds slurm id in so that time and RAM usage can be added
+    """
+    try:
+        id = os.environ['SLURM_JOBID']
+        df['SLURM_JOBID'] = id
+        return df
+    except:
+        return df
+
 def make_model(model_type,train,test,validation,label_name,type,attribute,num_feats,do_hyp,cv_folds,trial):
     """
     Loads data, removes invalid data, splits data, feeds into ML model.
@@ -701,6 +712,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
     final_features = []
     final_labels = []
     final_params = []
+    #final_resources = [] # tuple, (time in seconds, RAM in GB)
 
 
     if not do_hyp:
@@ -744,7 +756,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
 
             # reduce to top features
             x_train = select_features(x_train, y_train, num_feats, False)
-            x_test = select_features(x_test,'dont need',num_feats, y_train.columns)
+            x_test = select_features(x_test,'dont need',num_feats, x_train.columns)
 
             model = train_model(x_train, encoded_y_train, model_type, num_classes)
             final_models.append(model)
@@ -900,6 +912,7 @@ def make_model(model_type,train,test,validation,label_name,type,attribute,num_fe
 
     # mean summaries
     summaries = mean_summaries(summaries)
+    summaries = append_slurm_id(summaries)
 
     # mean prec_recall_dfs
     prec_recall_dfs = mean_prec_recall(prec_recall_dfs)
