@@ -17,8 +17,8 @@ The entire project is tested to run on this image with every commit.
 ### `conda env create -f data/envi.yaml`
 This will install all dependancies and packages this projected depends on into a conda environment.
 
-### `conda activate ach.0.3`
-This activates the conda environment we just created, the name of the environment changes and 'ach.0.3' may need to be replaced with the name at the top of data/envi.yaml
+### `conda activate ach.0.8`
+This activates the conda environment we just created, the name of the environment changes and 'ach.0.8' may need to be replaced with the name at the top of data/envi.yaml
 
 ### `pip install -e .`
 Dont forget the period at the end of this command, it is required to install acheron into the conda environment.
@@ -98,3 +98,11 @@ Now we build models trained on public NCBI & PATRIC data, then use the trained m
 ### `for drug in AMP AMC AZM CHL CIP CRO FOX GEN NAL SXT TET TIO STR KAN; do acheron build model -x grdi -y salm_amr -l AMR_MIC -f 1000 -m XGB -c 8 -a $drug -t 11mer --cluster slurm --trial 10; done`
 
 We can then do the opposite, training on grdi and using those models to predict resistance to NCBI and PATRIC data.
+
+### python acheron/helpers/rerun_missed.py
+
+This will run all tests as seen in the steinkey_et_al_2021 paper.
+
+### python acheron/helpers/add_resources.py
+
+If running using slurm, you can pull the wall time and the max RAM from sacct. This command will add Elapsed time and max ram to the summary file in the results folder, alongside accuracy, various error rates. Its important to note that ram is sampled in intervals, not continously (which would have preformance implications). So if there was a temporary spike in RAM that did not exceed the allocated memory of that specific job, MaxRSS might not catch that spike. Also, if a job failed and then was finished in a 2nd job, that test will have 2 sacct files. i.e. trials 1-4 might have a different jobid as trials 5-10. Therefore, if generating average RAM use, trials 1-4 will have to be divided by 4, and trials 5-10 will have to be divided by 6.
