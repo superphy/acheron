@@ -30,7 +30,7 @@ def build_model(arguments):
     # when using slurm cluster management
     elif cluster == 'SLURM':
         os.system("sbatch -c {0} --mem {1} snakemake -s acheron/workflows/modeler.smk -j {0} \
-        --config{2}".format(getattr(arguments,'cores'), RAM, model_args))
+        --config{2} --nolock".format(getattr(arguments,'cores'), RAM, model_args))
 
     else:
         raise Exception("cluster config {} not supported, use slurm or none".format(cluster))

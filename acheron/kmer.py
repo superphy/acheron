@@ -35,7 +35,7 @@ def build_kmer_matrix(dataset, kmer_length, cores, cluster):
         workflow_smk, cores, kmer_length, dataset))
     elif cluster.upper()== "SLURM":
         os.system("sbatch -c {1} --mem {4}G snakemake -s {0} -j {1} \
-        --config kmer_length={2} dataset={3} cores={1}".format(
+        --config kmer_length={2} dataset={3} cores={1} --nolock".format(
         workflow_smk, cores, kmer_length, dataset, SLURM_RAM))
     else:
         raise Exception("cluster option {} not recognized, only slurm or none allowed".format(cluster))

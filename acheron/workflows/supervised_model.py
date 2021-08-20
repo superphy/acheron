@@ -192,7 +192,7 @@ def train_model(features, label, model_type, num_classes):
 
     # Support Vector Classifier
     # https://scikit-learn.org/stable/modules/svm.html#classification
-    if model_type.upper() in ['SVC']:
+    if model_type.upper() in ['SVC', 'SVM']:
         from sklearn import svm
         model = svm.SVC()
 

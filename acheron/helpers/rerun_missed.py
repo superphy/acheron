@@ -19,21 +19,21 @@ def steinkey2021():
     attrs = ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']
     mdls = ['SVM'] # only put non XGB-ANN models here
     #currently leaving out the 1mil feat set
-    xgb_feats = ['100','1000','10000','100000']+[str(i) for i in range(10,100,10)]
-    ann_feats = ['100','1000','10000']
+    full_feats = ['100','1000','10000','100000']+[str(i) for i in range(10,100,10)]
+    part_feats = ['100','1000','10000']
     trials = [str(i) for i in range(10)]
 
     tests = []
     for i in attrs:
         for l in trials:
-            for k in xgb_feats:
+            for k in full_feats:
                 tests.append(['XGB','salm_amr','none','none',k,'False',5,i,l])
+            for k in part_feats:
                 tests.append(['XGB','salm_amr','none','none',k,'True',5,i,l])
-            for ki in ann_feats:
-                tests.append(['ANN','salm_amr','none','none',ki,'False',5,i,l])
-                tests.append(['ANN','salm_amr','none','none',ki,'True',5,i,l])
+                tests.append(['ANN','salm_amr','none','none',k,'False',5,i,l])
+                tests.append(['ANN','salm_amr','none','none',k,'True',5,i,l])
             for j in mdls:
-                tests.append([j,'salm_amr','none','none',k,'False',5,i,l])
+                tests.append([j,'salm_amr','none','none','1000','False',5,i,l])
 
     return tests
 
@@ -71,7 +71,10 @@ def rerun_missing(missing, missing_dirs):
 
     for miss, dir in zip(missing, missing_dirs):
         model,train,test,validate,feats,hyp,cvfolds,attribute,trial = miss
-        command = "acheron build model -x {} -l AMR_MIC -f {} -m {} -c 8 -a {} -t 11mer --cluster slurm --trial 10".format(train,feats,model,attribute)
+        if hyp == "True":
+            command = "acheron build model -x {} -l AMR_MIC -f {} -m {} -c 8 -a {} -p -t 11mer --cluster slurm --trial 10".format(train,feats,model,attribute)
+        else:
+            command = "acheron build model -x {} -l AMR_MIC -f {} -m {} -c 8 -a {} -t 11mer --cluster slurm --trial 10".format(train,feats,model,attribute)
         print(command)
         # remove which jobs have already been completed, as to not corrupt the time and mem tests
         # actually, on 2nd thought, we can just check how many results came from each job and math accordingly

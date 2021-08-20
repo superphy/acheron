@@ -3,6 +3,8 @@ import numpy as np
 import joblib
 import glob
 
+import keras
+
 from acheron.workflows import supervised_model
 
 # set to 5 for 5 fold cross-validation
@@ -91,8 +93,13 @@ rule build_model:
         for fold_num, params_set in enumerate(params):
             joblib.dump(params_set, "{}/params{}.joblib".format(out_dir,fold_num))
 
-        for fold_num, model in enumerate(models):
-            joblib.dump(model, "{}/model{}.joblib".format(out_dir,fold_num))
+        if config['model'] !='ANN':
+            for fold_num, model in enumerate(models):
+                joblib.dump(model, "{}/model{}.joblib".format(out_dir,fold_num))
+        else:
+            for fold_num, model in enumerate(models):
+                # this model loaded using model = keras.models.load_model('path_to_model.h5')
+                model.save("{}/model{}.h5".format(out_dir,fold_num))
         predicted_df.to_pickle(out_dir+"/predictions.df")
         prec_recall.to_pickle(out_dir+"/precision_recall_fscore_support.df")
         summary.to_pickle(out_dir+"/summary.df")
