@@ -18,3 +18,7 @@ test_patric_dl/*
 slurm-*.out
 
 test.fasta
+
+predict_tests/*
+
+*.fasta

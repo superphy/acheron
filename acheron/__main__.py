@@ -20,6 +20,8 @@ from .model import build_model
 from .annotate import annotate_genomes
 from .annotate import identify_important_regions
 
+from .predict import make_predictions
+
 # Result Functions
 # TODO
 
@@ -89,6 +91,10 @@ def main():
         else:
             raise argparse.ArgumentError(arguments.download_command, "Only downloading genomes and antibiogram data is supported right now")
 
+    # Predictor
+    elif arguments.action_command == 'predict':
+        make_predictions(arguments.path, arguments.module, arguments.out, arguments.cores, arguments.cluster)
+
     else:
         raise argparse.ArgumentError(arguments.action_command, "acheron requires one of the positional arguments listed above")
 
@@ -139,7 +145,14 @@ def parse_arguments():
     root_parser = argparse.ArgumentParser()
 
     action_subparsers = root_parser.add_subparsers(title='action', dest='action_command',
-                    help="What action you would like to take in ['build','result','annotate','identify','summary','download']")
+                    help="What action you would like to take in ['build','result','annotate','identify','summary','download','predict']")
+
+    # Prediction subparser
+    predict_parser = action_subparsers.add_parser('predict', parents=[parent_parser], help="Predicting attributes of WGS data")
+    predict_parser.add_argument('-m','--module', required=True,
+                    help="What you would like to predict, currently supported are [MIC]")
+    predict_parser.add_argument('-p','--path',required=True,
+                    help="Path to either a single fasta file or a directory of fasta files")
 
     # Download subparser
     download_parser = action_subparsers.add_parser('download',

@@ -18,6 +18,7 @@ def steinkey2021():
     """
     attrs = ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']
     mdls = ['SVM'] # only put non XGB-ANN models here
+    grdi_models = ['SVM','XGB','ANN']
     #currently leaving out the 1mil feat set
     full_feats = ['100','1000','10000','100000']+[str(i) for i in range(10,100,10)]
     part_feats = ['100','1000','10000']
@@ -34,6 +35,12 @@ def steinkey2021():
                 tests.append(['ANN','salm_amr','none','none',k,'True',5,i,l])
             for j in mdls:
                 tests.append([j,'salm_amr','none','none','1000','False',5,i,l])
+            # grdi
+            if i != 'FIS':
+                for j in grdi_models:
+                    tests.append([j,'salm_amr','grdi','none','1000','False',5,i,l])
+                    tests.append([j,'grdi','none','none','1000','False',5,i,l])
+                    tests.append([j,'grdi','salm_amr','none','1000','False',5,i,l])
 
     return tests
 
