@@ -103,7 +103,7 @@ def parse_arguments():
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('--dry_run', default=False, action='store_true',
                     help="Checks if all requirements of the given command are satisfied")
-    parent_parser.add_argument('-c', '--cores', default = max(1,cpu_count()-1),
+    parent_parser.add_argument('-c', '--cores', default = max(1,cpu_count()-1), type=int,
                     help="Number of cores to use, defaults to number of system cores minus 1")
     parent_parser.add_argument('-o', '--out', default = 'stdout',
                     help="Output path/file to save results")

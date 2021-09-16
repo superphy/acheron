@@ -44,7 +44,7 @@ def make_matrix(dataset, kmer_length, matrix_dtype, num_threads, split_num):
     dataset, kmer_length), allow_pickle=True)
 
     genomes = splits_array[int(split_num)-1]
-    genomes = [i.split('/')[-1] for i in genomes]
+    genomes = [i.split('/')[-1] for i in genomes if i != None]
 
     total = len(genomes)
 

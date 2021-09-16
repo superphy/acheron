@@ -79,9 +79,9 @@ def rerun_missing(missing, missing_dirs):
     for miss, dir in zip(missing, missing_dirs):
         model,train,test,validate,feats,hyp,cvfolds,attribute,trial = miss
         if hyp == "True":
-            command = "acheron build model -x {} -l AMR_MIC -f {} -m {} -c 8 -a {} -p -t 11mer --cluster slurm --trial 10".format(train,feats,model,attribute)
+            command = "acheron build model -x {} -y {} -l AMR_MIC -f {} -m {} -c 8 -a {} -p -t 11mer --cluster slurm --trial 10".format(train,test,feats,model,attribute)
         else:
-            command = "acheron build model -x {} -l AMR_MIC -f {} -m {} -c 8 -a {} -t 11mer --cluster slurm --trial 10".format(train,feats,model,attribute)
+            command = "acheron build model -x {} -y {} -l AMR_MIC -f {} -m {} -c 8 -a {} -t 11mer --cluster slurm --trial 10".format(train,test,feats,model,attribute)
         print(command)
         # remove which jobs have already been completed, as to not corrupt the time and mem tests
         # actually, on 2nd thought, we can just check how many results came from each job and math accordingly
