@@ -16,7 +16,7 @@ def extract_value(sacct_str, sacct_type):
 
         last_char = sacct_str[-1]
         if last_char.isalpha():
-            ram_int = int(sacct_str[:-1])
+            ram_int = int(float(sacct_str[:-1]))
             if last_char == 'K':
                 return ram_int/(1024**2)
             elif last_char == 'M':
@@ -32,6 +32,9 @@ def extract_value(sacct_str, sacct_type):
 
     if sacct_type == "TIME":
         times = sacct_str.split(":")
+        if '-' in times[0]:
+            days, hours = times[0].split('-')
+            times[0] = int(days)*24+int(hours)
         times = [int(i) for i in times]
         total_mins = times[0]*60+times[1]+times[2]/60
         return total_mins
@@ -78,8 +81,17 @@ def add_resources_to_summaries():
             max_ram = subprocess.getoutput(["sacct -j {} --format='MaxRSS' | tail -n 1".format(slurm_id)])
 
             # time is expressed in minutes, max ram in Gibibytes (GiB)
-            elapsed = extract_value(elapsed, 'TIME')
-            max_ram = extract_value(max_ram, 'RAM')
+            try:
+                elapsed = extract_value(elapsed, 'TIME')
+            except:
+                print("Time unextractable from slurm job with id {}".format(slurm_id))
+                raise
+
+            try:
+                max_ram = extract_value(max_ram, 'RAM')
+            except:
+                print("RAM unextractable from slurm job with id {}".format(slurm_id))
+                raise
 
             summary_df['Time (m)'] = elapsed
             summary_df['Max Ram (GiB)'] = max_ram
