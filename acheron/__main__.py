@@ -22,8 +22,7 @@ from .annotate import identify_important_regions
 
 from .predict import make_predictions
 
-# Result Functions
-# TODO
+from .result import print_results
 
 # Summary Caller
 # TODO
@@ -76,7 +75,7 @@ def main():
 
     # Result Caller
     elif arguments.action_command == 'result':
-        print('finish me')
+        print_results(arguments)
 
     # Summary Caller
     elif arguments.action_command == 'summary':
