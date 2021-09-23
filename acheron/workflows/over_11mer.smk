@@ -141,6 +141,38 @@ rule merge_sub_matrices:
         config['kmer_length'])
     run:
         # again, were hoping that the input is actually a list of inputs,(check)
-        final_matrix = pd.concat([pd.read_pickle(i) for i in input])
+        #final_matrix = pd.concat([pd.read_pickle(i) for i in input])
 
-        final_matrix.to_pickle(output[0])
+        pre_filter = False # toggle this to save RAM at the expensive of storage
+
+        if not pre_filter:
+
+            final_matrix = pd.read_pickle(input[0])
+            for i, mat in enumerate(input):
+                if i != 0:
+                    new_slice = pd.read_pickle(mat)
+                    final_matrix = pd.concat([final_matrix, new_slice])
+                    del new_slice
+                    gc.collect()
+            final_matrix.to_pickle(output[0])
+
+        else:
+            # This is because we dont have labels during feature generation, but we
+            # need it in this specific case to pre-filter poor quality k-mers
+            print("This expansion is explicity written for MIC's, it will not work with other modules")
+            samples = list(pd.read_pickle(input[0]).index)
+            for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
+                label_df = pd.read_pickle("data/{}/labels/AMR_MIC.df".format(config['dataset']))[[drug]]
+                label_df.reindex(samples)
+
+                with open("data/{}/labels/AMR_MIC_encoder.pkl".format(config['dataset']), 'rb') as unpickler:
+                    encoder = pickle.load(unpickler)
+                labels = [encoder[i] for i in label_df[drug]]
+
+                #             large_feat_select(file_paths, RAM_denom, num_feats, labels)
+                drug_matrix = large_feat_select(input, 5, 10000000, labels)
+
+                drug_matrix.to_pickle("data/{}/features/{}mer_matrix{}.df".format(config['dataset'],
+                config['kmer_length'], drug))
+
+                # NOTE: This is intented to fail the snakemake, you need to check manually for the output
