@@ -4,6 +4,11 @@ import pandas as pd
 
 import math
 import os
+import gc
+import pickle
+
+from acheron.workflows.supervised_model import apply_mask
+from acheron.workflows import over_11mer_matrix
 
 # Location of the raw genomes
 RAW_GENOMES_PATH = "data/{}/wgs/raw/".format(config['dataset'])
@@ -29,6 +34,17 @@ MATRIX_SPLITS = [i+1 for i in range(math.ceil(NUM_GENOMES/128))]
 
 ids, = glob_wildcards(RAW_GENOMES_PATH+"{id}.fasta")
 
+
+# if prefiltering, change output of final step, rule merge_sub_matrices
+if bool(config['prefiltering']):
+    merge_output = []
+    for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
+        merge_output.append("data/{}/features/{}mer_matrix{}.df".format(config['dataset'],
+        config['kmer_length'], drug))
+else:
+    merge_output = "data/{}/features/{}mer_matrix.df".format(config['dataset'],
+    config['kmer_length'])
+
 # from sub_11mer.smk, we will use clean_fastas, count_kmers, dump_kmers
 subworkflow kmer:
     workdir:
@@ -38,8 +54,7 @@ subworkflow kmer:
 
 rule all:
     input:
-        "data/{}/features/{}mer_matrix.df".format(config['dataset'],
-        config['kmer_length'])
+        merge_output
 
 # for subsets of genomes, adding this as a seperate step saves on ram
 # as we cannot fit all genomes in memory at a single time, so we batch the kmers
@@ -137,13 +152,12 @@ rule merge_sub_matrices:
         str(config['kmer_length'])+"mers/sub_df_{matrix_num}_of_"
         +str(len(MATRIX_SPLITS))+".df", matrix_num = MATRIX_SPLITS)
     output:
-        "data/{}/features/{}mer_matrix.df".format(config['dataset'],
-        config['kmer_length'])
+        merge_output
     run:
         # again, were hoping that the input is actually a list of inputs,(check)
         #final_matrix = pd.concat([pd.read_pickle(i) for i in input])
 
-        pre_filter = False # toggle this to save RAM at the expensive of storage
+        pre_filter = bool(config['prefiltering'])
 
         if not pre_filter:
 
@@ -163,16 +177,26 @@ rule merge_sub_matrices:
             samples = list(pd.read_pickle(input[0]).index)
             for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
                 label_df = pd.read_pickle("data/{}/labels/AMR_MIC.df".format(config['dataset']))[[drug]]
-                label_df.reindex(samples)
+                label_df = label_df[~label_df.index.duplicated(keep='first')]
+                label_df = label_df.reindex(samples)
+
+                try:
+                    mask = pd.read_pickle("data/{}/features/masks/{}mer_AMR_MIC.df".format(config['dataset'],config['kmer_length']))
+                    mask = mask[drug]
+                except:
+                    raise Exception("No {}mer mask has been generated for the {} dataset".format(config['kmer_length'],config['dataset']))
+
+                garb, label_df = apply_mask(samples, label_df, mask)
 
                 with open("data/{}/labels/AMR_MIC_encoder.pkl".format(config['dataset']), 'rb') as unpickler:
                     encoder = pickle.load(unpickler)
-                labels = [encoder[i] for i in label_df[drug]]
+                labels = [encoder[drug][i] for i in label_df[drug]]
 
                 #             large_feat_select(file_paths, RAM_denom, num_feats, labels)
-                drug_matrix = large_feat_select(input, 5, 10000000, labels)
+                drug_matrix = over_11mer_matrix.large_feat_select(input, 5, 10000000, labels)
 
                 drug_matrix.to_pickle("data/{}/features/{}mer_matrix{}.df".format(config['dataset'],
                 config['kmer_length'], drug))
 
-                # NOTE: This is intented to fail the snakemake, you need to check manually for the output
+                del drug_matrix
+                gc.collect()

@@ -7,12 +7,13 @@ def get_result(arguments):
     Reads the corresponding results file,
     prints out the summary dataframe
     """
-    first = "results/model={}_train={}_test={}_validate={}_feats={}_hyp={}".format(
+    first = "results/model={}_train={}_test={}_validate={}_feats={}_type={}_hyp={}".format(
     getattr(arguments,'model'),
     getattr(arguments,'train'),
     getattr(arguments,'test'),
     getattr(arguments,'validation'),
     getattr(arguments,'num_features'),
+    getattr(arguments,'type'),
     getattr(arguments,'hyperparam'))
 
 

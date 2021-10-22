@@ -24,8 +24,7 @@ from .predict import make_predictions
 
 from .result import print_results
 
-# Summary Caller
-# TODO
+from .summary import make_summary
 
 def main():
     arguments = parse_arguments()
@@ -34,7 +33,7 @@ def main():
     if arguments.action_command == 'build':
         if arguments.build_command == 'feature':
             if arguments.type == 'kmer':
-                build_kmer_matrix(arguments.dataset, arguments.kmer_length, arguments.cores, arguments.cluster)
+                build_kmer_matrix(arguments.dataset, arguments.kmer_length, arguments.cores, arguments.cluster, arguments.prefiltering)
             elif arguments.type == 'genes':
                 build_genes_matrix(arguments.dataset)
             elif arguments.type == 'abricate':
@@ -79,7 +78,7 @@ def main():
 
     # Summary Caller
     elif arguments.action_command == 'summary':
-        print('finish me ')
+        make_summary(arguments.subset, arguments.out, arguments.media)
 
     # Download Caller
     elif arguments.action_command == 'download':
@@ -134,6 +133,9 @@ def parse_arguments():
                     help="to run the same test multiple times, change trial number")
     test_params.add_argument('--cv', default=5, help="number of folds in cross validation")
     test_params.add_argument('--manual', default=False, help="To manually call model creation, skipping snakemake checks and cluster support")
+    test_params.add_argument('--prefiltering', default=False, action='store_true',
+                    help="Uses datasets that have been prefiltered")
+
 
     download_params = argparse.ArgumentParser(add_help=False)
     download_params.add_argument('-db', '--database', required=True, action='append',
@@ -189,6 +191,8 @@ def parse_arguments():
                     help="Choose between building AMR or VF with abricate")
     feature_parser.add_argument('-d', '--dataset', required = True,
                     help="Name of dataset, what the name of the folder containing sequences is named")
+    feature_parser.add_argument('--prefiltering', default=False, action='store_true',
+                    help="Filters 31-mers down to their top 10 million features, ~85% storage savings")
 
 
     label_parser = build_subparsers.add_parser('label',
@@ -236,9 +240,13 @@ def parse_arguments():
 
     # Summary Subparser
     # give range of results to summarize, and figure
-    summary_parser = action_subparsers.add_parser('summary', parents=[parent_parser,test_params],
-                    help="For general results and figures, i.e. compare 3 model types at 50 different feature sizes")
-    # TODO: sub parser for acheron summary table, acheron summary figure
+    summary_parser = action_subparsers.add_parser('summary', parents=[parent_parser],
+                    help="For general summaries. This will be defined for my papers but you can add in your own summary functions")
+
+    summary_parser.add_argument("--subset", required=True,
+                    help="Which subset of results to print on")
+    summary_parser.add_argument("--media", default='table',
+                    help="What form the summary should take in ['table','figures']")
 
     args = root_parser.parse_args()
 

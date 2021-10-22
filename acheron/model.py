@@ -15,9 +15,11 @@ def build_model(arguments):
                 RAM = '125G'
 
     # if using >11mers, max out the ram
+    greedy_sceduler = False
     if getattr(arguments,'type')[-3:] == 'mer':
         if int(getattr(arguments,'type')[:2]) > 11:
             RAM = MAX_RAM
+            greedy_sceduler = True
 
 
     cluster = getattr(arguments,'cluster').upper()
@@ -29,8 +31,12 @@ def build_model(arguments):
 
     # when using slurm cluster management
     elif cluster == 'SLURM':
-        os.system("sbatch -c {0} --mem {1} snakemake -s acheron/workflows/modeler.smk -j {0} \
-        --config{2} --nolock".format(getattr(arguments,'cores'), RAM, model_args))
+        if greedy_sceduler:
+            os.system("sbatch -c {0} --mem {1} snakemake -s acheron/workflows/modeler.smk -j {0} \
+            --config{2} --nolock --scheduler greedy".format(getattr(arguments,'cores'), RAM, model_args))
+        else:
+            os.system("sbatch -c {0} --mem {1} snakemake -s acheron/workflows/modeler.smk -j {0} \
+            --config{2} --nolock".format(getattr(arguments,'cores'), RAM, model_args))
 
     else:
         raise Exception("cluster config {} not supported, use slurm or none".format(cluster))

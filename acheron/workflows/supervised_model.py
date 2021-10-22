@@ -522,7 +522,14 @@ def apply_mask(features, labels, mask):
     # its important to note that the mask is for everything in the label df, but
     # when we mask the features, that df might not have it
     # therefore we reduce the mask to samples that are seen
-    seen = list(features.index)
+    if isinstance(features, pd.DataFrame):
+        seen = list(features.index)
+        skip_nan_check = False
+    elif isinstance(features, list):
+        seen = features
+        skip_nan_check = True
+    else:
+        raise exception("Needs list of features or dataframe with declared index, not {}".format(type(features)))
 
     mask = mask[[i in seen for i in mask.index]]
     labels = labels[[i in seen for i in labels.index]]
@@ -537,8 +544,17 @@ def apply_mask(features, labels, mask):
 
     # remove samples that we dont have data for
     # (these appear as nans in the mask)
-    mask = pd.Series(index = mask.index,
-        data = [False if np.isnan(i) else i for i in mask])
+    if not skip_nan_check:
+        try:
+            mask = pd.Series(index = mask.index,
+                data = [False if np.isnan(i) else i for i in mask])
+        except:
+            for i in mask:
+                try:
+                    np.isnan(i)
+                except:
+                    print("{} cannot be checked if isnan".format(i))
+            raise
 
     # double check that the mask biosample order matches the feature biosample order
     for i, biosample in enumerate(mask.index):
@@ -547,9 +563,11 @@ def apply_mask(features, labels, mask):
     if isinstance(features, pd.Series) or isinstance(features, pd.DataFrame):
         labels = labels[list(mask)]
         features = features[list(mask)]
-
+    elif isinstance(features, list):
+        labels = labels[list(mask)]
+        features = pd.Series(features)[list(mask)]
     else:
-        raise Exception("Masking of type {} is not defined".format(type(df)))
+        raise Exception("Masking of type {} is not defined".format(type(features)))
 
     return features, labels
 

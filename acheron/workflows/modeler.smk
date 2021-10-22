@@ -39,9 +39,9 @@ trials = [i for i in range(config['trial'])]
 
 rule all:
     input:
-        expand("results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}".format(
-        config['model'], config['train'], config['test'], config['validation'],
-        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}/summary.df',atb=columns, trl=trials)
+        expand("results/model={}_train={}_test={}_validate={}_feats={}_type={}_hyp={}_cvfolds={}".format(
+        config['model'], config['train'], config['test'], config['validation'], config['num_features'],
+        config['type'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}/summary.df',atb=columns, trl=trials)
 
 rule mask:
     input:
@@ -77,9 +77,9 @@ rule build_model:
     input:
         features+splits+masks
     output:
-        "results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}".format(
-        config['model'], config['train'], config['test'], config['validation'],
-        config['num_features'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}/summary.df'
+        "results/model={}_train={}_test={}_validate={}_feats={}_type={}_hyp={}_cvfolds={}".format(
+        config['model'], config['train'], config['test'], config['validation'], config['num_features'],
+        config['type'], config['hyperparam'], config['cv'])+'_attribute={atb}_trial={trl}/summary.df'
     threads:
         8
     run:
