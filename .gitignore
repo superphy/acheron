@@ -16,9 +16,7 @@ data/oct2020_envi.yaml
 test_patric_dl/*
 
 slurm-*.out
-
+res_from_waff/*
 test.fasta
-
 predict_tests/*
-
 *.fasta

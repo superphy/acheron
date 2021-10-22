@@ -73,7 +73,7 @@ def make_summary(subset, out, media):
             else:
                 raise exception("File extension {} not supported".format(out[-4:]))
 
-    elif media = 'figure':
+    elif media == 'figure':
         pass
 
     else:
