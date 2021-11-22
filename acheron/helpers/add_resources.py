@@ -52,13 +52,14 @@ def add_resources_to_summaries():
     test = '*'
     validate = '*'
     feats = '*'
+    type = '*'
     hyp = '*'
     cvfolds = '*'
     attribute = '*'
     trial = '*'
 
-    search_space = "results/model={}_train={}_test={}_validate={}_feats={}_hyp={}_cvfolds={}_attribute={}_trial={}/summary.df".format(
-        model, train, test, validate, feats, hyp, cvfolds, attribute, trial)
+    search_space = "results/model={}_train={}_test={}_validate={}_feats={}_type={}_hyp={}_cvfolds={}_attribute={}_trial={}/summary.df".format(
+        model, train, test, validate, feats, type, hyp, cvfolds, attribute, trial)
 
 
     file_list = glob.glob(search_space)
@@ -73,7 +74,7 @@ def add_resources_to_summaries():
             print("Ensure the version of Pandas used to pickle is the same as the version used to read the pickle")
             raise
 
-        if 'SLURM_JOBID' in summary_df.columns:
+        if 'SLURM_JOBID' in summary_df.columns and 'Time (m)' not in summary_df.columns:
             num_slurm += 1
             slurm_id = summary_df['SLURM_JOBID'][0]
 
