@@ -77,6 +77,15 @@ def weigh_jobs_per_slurm(summary):
 
     return summary
 
+def convert(summary):
+    """
+    Takes a df and converts each column to the relevant datatype.
+    e.g. feats is cast from a string to a float
+    """
+
+    summary[['feats','cvfolds']] = summary[['feats','cvfolds']].apply(pd.to_numeric)
+    return summary
+
 def get_stats(model_df):
     n = np.sum(model_df['Supports'])
 
@@ -98,7 +107,7 @@ def get_stats(model_df):
 
     return n,acc,oned_acc,vme,me,nme,time,ram,acc_stdev,oned_acc_stdev,vme_stdev,me_stdev,nme_stdev,time_stdev,ram_stdev
 
-def summarize(results, subset):
+def summarize(results, subset, media):
     """
     Turns the table of thousands of results into simple, reportable stats
     i.e. 95.2% (+/- 2.45%)
@@ -106,34 +115,6 @@ def summarize(results, subset):
     """
 
     if subset =='steinkey2021':
-        """
-        models = ['XGB','SVM','ANN']
-        abx = ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']
-        feat_sizes = ['1000']
-
-        for num_feats in feat_sizes:
-            feat_df = results[results['feats']==model]
-
-            # Results summarized per model
-            for model in models:
-
-                # TODO: remove non-diverse antimicrobials when we know what they are
-                model_df = results[results['model']==model]
-                model_results = {}
-
-                for stat in ['Accuracy', 'Within 1 Dilution', 'Very Major Error','Major Error', 'Non Major Error']:
-                    mean = model_df[stat].mean()
-                    stdev = model_df[stat].stdev()
-                    model_results[stat] = [mean,stdev]
-
-                    for drug in abx:
-                        drug_df = model_df[model_df['attribute']==drug]
-
-                print(model_results)
-
-            # TODO: put all results in table, return that
-            return 0
-        """
         datasets = [['salm_amr','none','none'],['grdi','none','none'],['salm_amr','grdi','none'],['grdi','salm_amr','none']]
         models = ['XGB','SVM','ANN']
 
@@ -153,30 +134,51 @@ def summarize(results, subset):
         """
         summs = []
 
+        if media == 'table':
+            for ds in datasets:
+                # TODO hyperparam'd models
+                dataset_df = results[(results['train']==ds[0]) & (results['test']==ds[1]) & (results['validate']==ds[2]) & (results['hyp']=='False')]
+                for type in types:
+                    if type=='31mer':
+                        feats = '1000000'
+                    else:
+                        feats = '1000'
+                    type_df = dataset_df[(dataset_df['type']==type) & (dataset_df['feats']==feats)]
+                    for model in models:
+                        model_df = type_df[type_df['model']==model]
+                        # as of this point, there are 150 samples in the df, n=10 for each of 15 abx
 
-        for ds in datasets:
-            # TODO hyperparam'd models
-            dataset_df = results[(results['train']==ds[0]) & (results['test']==ds[1]) & (results['validate']==ds[2]) & (results['hyp']=='False')]
-            for type in types:
-                if type=='31mer':
-                    feats = '1000000'
-                else:
-                    feats = '1000'
-                type_df = dataset_df[(dataset_df['type']==type) & (dataset_df['feats']==feats)]
-                for model in models:
-                    model_df = type_df[type_df['model']==model]
-                    # as of this point, there are 150 samples in the df, n=10 for each of 15 abx
+                        stats = get_stats(model_df)
+                        summs.append([model,ds[0],ds[1],ds[2],feats,type,False,5,'all',*stats])
+                        print("{} predicted with 1D accuracy of {}% (+/- {}) using {} {}s xyv:[{},{},{}]".format(model,stats[1],stats[8],feats,type,ds[0],ds[1],ds[2]))
 
-                    stats = get_stats(model_df)
-                    summs.append([model,ds[0],ds[1],ds[2],feats,type,False,5,'all',*stats])
-                    print("{} predicted with 1D accuracy of {}% (+/- {}) using {} {}s xyv:[{},{},{}]".format(model,stats[1],stats[8],feats,type,ds[0],ds[1],ds[2]))
 
-                    for drug in abx:
-                        # These are for accuracies specific to each abx, rather than overall
-                        drug_df = model_df[model_df['attribute']=='drug']
-                        drug_stats = get_stats(drug_df)
-                        summs.append([model,ds[0],ds[1],ds[2],feats,type,False,5,drug,*drug_stats])
+                        for drug in abx:
+                            # These are for accuracies specific to each abx, rather than overall
+                            drug_df = model_df[model_df['attribute']==drug]
+                            drug_stats = get_stats(drug_df)
+                            summs.append([model,ds[0],ds[1],ds[2],feats,type,False,5,drug,*drug_stats])
+        elif media == 'figure':
+            for ds in datasets:
+                # TODO hyperparam'd models
+                dataset_df = results[(results['train']==ds[0]) & (results['test']==ds[1]) & (results['validate']==ds[2]) & (results['hyp']=='False')]
+                for type in types:
+                    type_df = dataset_df[(dataset_df['type']==type)]
+                    for feat in set(type_df['feats']):
+                        feat_df = type_df[type_df['feats']==feat]
+                        for model in models:
+                            model_df = feat_df[feat_df['model']==model]
 
+                            stats = get_stats(model_df)
+                            summs.append([model,ds[0],ds[1],ds[2],feats,type,False,5,'all',*stats])
+
+                            for drug in abx:
+                                # These are for accuracies specific to each abx, rather than overall
+                                drug_df = model_df[model_df['attribute']==drug]
+                                drug_stats = get_stats(drug_df)
+                                summs.append([model,ds[0],ds[1],ds[2],feats,type,False,5,drug,*drug_stats])
+        else:
+            raise Exception("media {} not defined in summarize".format(media))
         summs_df = pd.DataFrame(data=summs, columns=sum_cols+res_cols)
         return summs_df
     else:
@@ -187,11 +189,12 @@ def make_summary(subset, out, media):
         results = load_steinkey2021()
         results = add_results(results)
         results = weigh_jobs_per_slurm(results)
+        results = convert(results)
     else:
         raise Exception("Summaries need to be defined, either make your own or call one in summary.py")
 
     if media == 'table':
-        summary = summarize(results)
+        summary = summarize(results, subset, media)
         if out == 'stdout':
             print(summary)
         elif out[-5:] == '.xlsx':
@@ -207,7 +210,9 @@ def make_summary(subset, out, media):
 
     elif media == 'figure':
         from acheron import figures
-        group_figures(subset, results, out)
+        for i in range(5):
+            if i == 3:
+                figures.group_figures(subset, results, out, i)
 
     else:
         raise Exception("Summary media not in ['table','figure']")

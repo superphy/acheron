@@ -1,23 +1,27 @@
 import joblib
+import os,sys
+import pandas as pd
+import numpy as np
+import skbio.io
 
 from acheron.workflows import sequence_tools
 
 if config['model'].upper() in ['XGB','XGBOOST']:
-    model_ext = '.bst'
+    model_ext = '.bst' #TODO add in model name
 else:
     raise Exception("Model type {} not supported for feature extraction".format(config['model']))
 
-model_path = "model={}_train={}_test={}_validate={}_\
-feats={}_hyp={}_cvfolds={}_attribute={}_trial={}".format(
+model_path = "results/model={}_train={}_test={}_validate={}_\
+feats={}_type={}_hyp={}_cvfolds={}_attribute={}_trial={}/".format(
     config['model'],config['train'],config['test'],config['validation'],
-    config['feats'],config['hyperparam'],config['cv'],config['attribute'],
-    config['trial'])
+    config['feats'],config['type'],config['hyperparam'],config['cv'],
+    config['attribute'],config['trial'])
 
 rule all:
     input:
-        model_path+'.blast'
+        # TODO
 
-        
+
 rule make_blast_db:
     output:
         "data/{}/wgs/master.db".format(config['train'])
@@ -29,13 +33,12 @@ rule make_blast_db:
         master_path, output[0]))
 
 # Find top n features based on their importance to the model
-# and find their location in the genomes
 rule blast_top_feats:
     input:
         model_path+model_ext,
         "data/{}/wgs/master.db".format(config['train'])
     output:
-        model_path+'.blast'
+        model_path+'top_feats.blast'
     run:
         # load model
         model = joblib.load(input[0])
@@ -56,31 +59,43 @@ rule blast_top_feats:
 
         shell(blast_command)
 
-"""
+# Takes the top features as determined above and finds their locations
+# Also returns nearby genes and their distances to the k-mer
 rule find_hits:
     input:
-        "data/.....mer_blast_hits/words.blast",
-        "gffpandas/{id}.pkl"
+        model_path+'top_feats.blast'
     output:
-        "hits.pkl"
+        "annotations/"+config['train']+"_{drug}_"+config['type']+"/hits_df.pkl" # TODO Fix path
     run:
-        from sequence_tools import find_hits
+        from acheron import gene_finder
+
+        if config['train'] = 'grdi' and wildcards.drug == 'FIS':
+            # This drug doesnt exist in the GRDI dataset, so we skip
+            shell("touch {output}")
+            sys.exit(0)
+
+        #top_feats =  TODO read in top feats as npy 1d arr
+
+        hits = gene_finder.find_hits(top_feats,input)
+
+        hits.to_pickle(output)
+
 
 rule hit_summary:
     input:
-        "hits.pkl"
+        expand("annotations/"+config['train']+"_{drug}_"+config['type']+"/hits_df.pkl",drug=drugs) #TODO fix path
     output:
-        "mer_summary.csv"
+        "annotation/{}_hit_summary.csv".format(config['type'])
     run:
-        from sequence_tools import hit_summary
+        from acheron import gene_finder
+        gene_finder.hit_summary(config['train'],output)
 
 rule score_summary:
     input:
-        "mer_summary.csv"
+        "annotation/{}_hit_summary.csv".format(config['type'])
     output:
-        "score_summary.csv"
+        "annotation/{}_score_summary.csv".format(config['type'])
 
 rule select_best_hits:
 
 rule add_card_hits:
-"""

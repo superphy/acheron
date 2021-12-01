@@ -48,4 +48,4 @@ def test_summarize():
     results = summary.add_results(results)
     results = summary.weigh_jobs_per_slurm(results)
 
-    summ = summary.summarize(results,'steinkey2021')
+    summ = summary.summarize(results,'steinkey2021', 'table')

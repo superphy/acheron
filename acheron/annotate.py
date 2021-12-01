@@ -13,17 +13,13 @@ def identify_important_regions(arguments):
     dataset = getattr(arguments,'train')
     cores = getattr(arguments,'cores')
 
-    smk = "acheron/workflows/annotate_genomes.smk"
-
-    os.system("snakemake -s {0} -j {1} --config dataset={2} cores={1}".format(
-    smk, cores, dataset))
+    annotate_genomes(dataset, cores)
 
     # Prepare arguments for indentifier snakemake
-
     model_args = ''
     for arg in vars(arguments):
         model_args += " {}={}".format(arg, getattr(arguments,arg))
 
     # Call to region identify
-    os.system("snakemake -s acheron/workflows/modeler.smk -j {} \
+    os.system("snakemake -s acheron/workflows/identify_regions.smk -j {} \
     --config{}".format(cores, model_args))
