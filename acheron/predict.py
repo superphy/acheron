@@ -67,7 +67,7 @@ def build_matrix(relevant_feats, jf_list, cores):
     df = pd.DataFrame(data = kmer_matrix, columns = relevant_feats, index = runs)
     return df
 
-def load_module(module):
+def load_module(module,pathogen):
     """
     Loads everything about module from storage into memory
     Everything past this point is volatile
@@ -76,8 +76,16 @@ def load_module(module):
         boosters = []
         mics = []
         master_feats = []
-        for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN','FIS']:
-            bst = joblib.load("data/predict/models/{}/{}.bst".format(module.upper(),drug))
+
+        if pathogen.upper() == 'SALMONELLA':
+            drugs = ['AMP','AMC','AZM','CHL','CIP','CRO','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN','FIS']
+        elif pathogen.upper() == 'CAMPYLOBACTER':
+            drugs = ['AMP','AZM','CIP','GEN','NAL','TET','CLI','ERY','FLO','TEL']
+        else:
+            raise Exception("pathogen {} not defined in predict.py".format(pathogen))
+
+        for drug in drugs:
+            bst = joblib.load("data/predict/models/{}/{}/{}.bst".format(module.upper(),pathogen.lower(),drug))
             boosters.append(bst)
             mics.append(drug)
             master_feats.append(bst.feature_names)
@@ -88,23 +96,26 @@ def load_module(module):
     else:
         raise Exception("Module {} not defined".format(module))
 
-def decoder(preds, attr, module):
+def decoder(preds, attr, module,pathogen):
     """
     Takes a list of encoded predictions, converts them back into
     human readable labels
     """
-    with open("data/predict/models/{}/encoder.pkl".format(module.upper()),'rb') as fh:
+    with open("data/predict/models/{}/{}/encoder.pkl".format(module.upper(),pathogen),'rb') as fh:
         encoder = pickle.load(fh)
 
     decoder = {v:k for k,v in encoder[attr].items()}
     return [decoder[i] for i in preds]
 
-def make_predictions(path,module,out,cores,cluster):
+def make_predictions(path,module,out,cores,cluster,pathogen):
     """
     Path can be either a directory, or a single file
     """
     if module.upper() not in ["MIC", "ABX"]:
         raise Exception("Currently only supporting prediction of abx MIC values, not {}".format(module))
+
+    if pathogen.upper() not in ['SALMONELLA','CAMPYLOBACTER']:
+        raise Exception("Currently only supporting prediction for salmonella and campylobacter sequences")
 
     if os.path.isfile(path):
         if path[-6:] != '.fasta':
@@ -125,7 +136,7 @@ def make_predictions(path,module,out,cores,cluster):
 
     #if cluster.upper()=='NONE':
     os.system("snakemake -s acheron/workflows/predictor.smk -j {3} \
-    --config path={0} module={1} out={2} cores={3}".format(path,module,out,cores))
+    --config path={0} module={1} out={2} cores={3} pathogen={4}".format(path,module,out,cores,pathogen))
     #elif cluster.upper()== "SLURM":
     #    os.system("sbatch -c {3} acheron/workflows/predictor.smk --mem {4}G snakemake -s acheron/workflows/predictor.smk -j {3} \
     #    --config path={0} module={1} out={2} cores={3}".format(path,module,out,cores,RAM))
@@ -133,10 +144,10 @@ def make_predictions(path,module,out,cores,cluster):
     # at this point, we can assume that all the jellyfish files have been created
     # the matrix has not been created as we want it in memory and not saved
 
-    top_feats, models, attributes = load_module(module)
+    top_feats, models, attributes = load_module(module,pathogen)
 
     ids = [i.split('/')[-1].split('.')[0] for i in genome_paths]
-    jf_list = ["data/predict/jellyfish_results/{}.fa".format(i) for i in ids]
+    jf_list = ["data/predict/jellyfish_results/{}/{}.fa".format(pathogen,i) for i in ids]
     matrix = build_matrix(top_feats, jf_list, cores)
 
     rows = []
@@ -147,7 +158,7 @@ def make_predictions(path,module,out,cores,cluster):
         # select_features puts the features in the order required by the model
         # Error will be thrown anyways if features arent in correct order
         res = predict(model, features, 'XGB')
-        labels = decoder(res, attr, module)
+        labels = decoder(res, attr, module, pathogen)
         rows.append(labels)
 
     prediction_df = pd.DataFrame(data=np.transpose(rows), columns=attributes, index=ids)

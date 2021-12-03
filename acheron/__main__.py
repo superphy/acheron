@@ -91,7 +91,7 @@ def main():
 
     # Predictor
     elif arguments.action_command == 'predict':
-        make_predictions(arguments.path, arguments.module, arguments.out, arguments.cores, arguments.cluster)
+        make_predictions(arguments.path, arguments.module, arguments.out, arguments.cores, arguments.cluster, arguments.pathogen)
 
     else:
         raise argparse.ArgumentError(arguments.action_command, "acheron requires one of the positional arguments listed above")
@@ -154,6 +154,8 @@ def parse_arguments():
                     help="What you would like to predict, currently supported are [MIC]")
     predict_parser.add_argument('-p','--path',required=True,
                     help="Path to either a single fasta file or a directory of fasta files")
+    predict_parser.add_argument('--pathogen',required=True,
+                    help="Which pathogen the prediction is made one in ['salmonella','campylobacter']")
 
     # Download subparser
     download_parser = action_subparsers.add_parser('download',
