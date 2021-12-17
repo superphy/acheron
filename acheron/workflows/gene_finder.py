@@ -269,3 +269,25 @@ def hit_summary(dataset,out_path):
     all_df = pd.DataFrame(data=np.concatenate((data,np.asarray([what_amg]).T),axis=1),columns=['dataset','drug','kmer','gene','name','count','average_dist', 'std_dev' ,"AMG"])
 
     all_df.to_csv(output)
+
+def score_summary(type, dataset, top_feats):
+    """
+    where top_feats is a 1d array
+    """
+    for drug in ['AMC','AMP','AZM','FOX','TIO','CRO','CHL','CIP','GEN','NAL','STR','FIS',
+    'TET','SXT','KAN']:
+        if dataset == 'grdi' and drug in ['FIS']:
+            continue
+
+        # TODO: This function put on hold, need f_classif scores, imp arr is kmer,XGBoost_score, f_classif
+        # Will need to figure out how storing f_classif first
+        imp_path = "data/multi-mer/feat_ranks/{}_1000000_{}_{}mer_feature_ranks.npy".format(dataset,drug,kmer_length)
+        imp_arr = np.load(imp_path, allow_pickle=True)
+
+        for kmer in top_feats:
+            indx = np.where(imp_arr[0]==kmer)
+            scores = imp_arr[:,indx]
+            row.append([dataset,drug,kmer,scores[1],scores[2]])
+
+    df = pd.DataFrame(data=row,columns=['Dataset','Antimicrobial',kmer_length+'mer','XGBoost Score','f_classif'])
+    df.to_csv("data/multi-mer/feat_ranks/{}mer_score_summary.csv".format(kmer_length))

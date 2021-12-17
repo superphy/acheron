@@ -37,4 +37,4 @@ acheron build feature -c 144 -t kmer -k 11 -d public_campy --cluster slurm
 ## Step 6: Train models
 acheron build model -x public_campy -l AMR_MIC -f 1000 -m XGB -c 8 -a AMP -t 11mer --cluster slurm
 
-see tutorials/steinkey_et_al_2021.md for examples on building models and training on multliple datasets
+see tutorials/steinkey_et_al_2022.md for examples on building models and training on multliple datasets

@@ -33,7 +33,10 @@ def main():
     if arguments.action_command == 'build':
         if arguments.build_command == 'feature':
             if arguments.type == 'kmer':
-                build_kmer_matrix(arguments.dataset, arguments.kmer_length, arguments.cores, arguments.cluster, arguments.prefiltering)
+                build_kmer_matrix(arguments.dataset, arguments.kmer_length,
+                    arguments.cores, arguments.cluster, arguments.prefiltering,
+                    arguments.trials, arguments.cv, arguments.hyp,
+                    arguments.label)
             elif arguments.type == 'genes':
                 build_genes_matrix(arguments.dataset)
             elif arguments.type == 'abricate':
@@ -195,6 +198,16 @@ def parse_arguments():
                     help="Name of dataset, what the name of the folder containing sequences is named")
     feature_parser.add_argument('--prefiltering', default=False, action='store_true',
                     help="Filters 31-mers down to their top 10 million features, ~85% storage savings")
+    feature_parser.add_argument('--trials', default=1,
+                    help="For use with prefiltering only, needs to equal or exceed eventual testing trials number")
+    feature_parser.add_argument('--cv', default=5,
+                    help="For use with prefiltering only, needs to match exactly with eventual cv used in model training")
+    feature_parser.add_argument('--hyp', default='False',
+                    help="For use with prefiltering only, needs to be run before running model generation.")
+    feature_parser.add_argument('--label', default='AMR_MIC',
+                    help="For use with prefiltering only, needs to be run before running model generation.")
+    # NOTE for the prefiltering commands, you can run multiples without conflict. i.e. can store both cv5 and cv4
+    # at the same time. So just run whatever you want your models to do, before running those models.
 
 
     label_parser = build_subparsers.add_parser('label',

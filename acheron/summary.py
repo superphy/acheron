@@ -140,9 +140,9 @@ def summarize(results, subset, media):
                 dataset_df = results[(results['train']==ds[0]) & (results['test']==ds[1]) & (results['validate']==ds[2]) & (results['hyp']=='False')]
                 for type in types:
                     if type=='31mer':
-                        feats = '1000000'
+                        feats = 1000000
                     else:
-                        feats = '1000'
+                        feats = 1000
                     type_df = dataset_df[(dataset_df['type']==type) & (dataset_df['feats']==feats)]
                     for model in models:
                         model_df = type_df[type_df['model']==model]
@@ -211,8 +211,7 @@ def make_summary(subset, out, media):
     elif media == 'figure':
         from acheron import figures
         for i in range(5):
-            if i == 3:
-                figures.group_figures(subset, results, out, i)
+            figures.group_figures(subset, results, out, i)
 
     else:
         raise Exception("Summary media not in ['table','figure']")

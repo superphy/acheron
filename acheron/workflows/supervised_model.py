@@ -571,6 +571,52 @@ def apply_mask(features, labels, mask):
 
     return features, labels
 
+def prefilter(metric, cutoff, train, ):
+    """
+    Reads variance from prerecorded variance matrices
+    Pulls a list of features to be kept to be passed into select_features()
+    pre_selection parameter
+
+    When metric == p_val, set cutoff to a decimal where all features equal or more equivalent are returned.
+    This means that the number of returned features will vary.
+
+    when metric == f_val, set cutoff to how many features you want returned.
+    i.e. a cutoff of 1000 will return the 1000 features with the most variance.
+    """
+    import operator
+    import heapq
+
+    ram_DENOM = 5 # IF YOU CHANGE THIS, CHANGE IN acheron/workflows/supervised_model.py
+
+    var_df = []
+    for slice in range(ram_denom):
+        variance_path = "data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
+            train, slice+1, ram_DENOM, trial, type, label, attribute, fold, cv)
+        if slices == 0:
+            var_df = pd.read_pickle(var_path)
+        elif slices >= ram_DENOM+1:
+            raise Exception("slice number out of bounds for ran_denom")
+        else:
+            var_split = pd.read_pickle(var_path)
+            var_df = pd.concat([var_df,var_split])
+
+    # at this point, var_df looks like
+    """ ~72.5 million rows, one for each feature, detailing variance for this specific attribute+split+trial combination
+        f_val,    p_val,    feature
+    0   0.01      0.01      GTAGCATGAATGGGGGTAATCTGGAATGGAA
+    1
+    ...
+    72 499 999
+    """
+    if metric == 'f_val': # returns top int(cutoff) features
+        top_feats = list(zip(*heapq.nlargest(cutoff, enumerate(df['f_val']), key=operator.itemgetting(1))))[0]
+        return list(var_df[var_df.index.isin(top_feats)]['feature'].values)
+    elif metric == 'p_val': # returns which ever features >= float(cutoff)
+        return list(var_df[var_df['p_val']>=cutoff]['feature'])
+    else:
+        raise Exception("metric {} not defined".format(metric))
+
+
 def select_features(features, labels, num_feats, pre_selection):
     """
     Reduces feature matrix down to the top num_feats features,
@@ -598,15 +644,20 @@ def select_features(features, labels, num_feats, pre_selection):
 
         return features
 
-    else:
+    elif isinstance(pre_selection, str) and pre_selection == 'pre-filter':
+        raise Exception("prefiltered features should be passed to this function, not determined in it")
+
+    elif isinstance(pre_selection, list) or isinstance(pre_selection, pd.core.indexes.base.Index):
         # we are using pre-determined features
         # needs to be list or pandas.columns
-        assert isinstance(pre_selection, list) or isinstance(pre_selection, pd.core.indexes.base.Index)
 
         # Only keep important data (this also reorders)
         features = features[pre_selection]
 
         return features
+    else:
+        raise Exception("pre_selection {} not defined".format(pre_selection))
+
 
 def split_data(features, labels, split, attribute, hyp, fold, num_splits, BLOCK_TRAIN=False):
     """

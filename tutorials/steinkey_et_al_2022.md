@@ -35,7 +35,7 @@ Create a folder for your project, including a folder for genomes sequences to go
 First we need the antimicrobial resistance data. Once we have a list of genomes that we have AMR data for, we can then download those genomes after. This downloads all AMR data from the NCBI and the PATRIC repositories and formats them into a single datasheet.
 
 ### `acheron download genomes --pathogen Salmonella -db NCBI -db PATRIC --output data/salm_amr/wgs/raw`
-Download sequence data from the NCBI and PATRIC repositories. It is important the genomes go into a data/{name}/wgs/raw directory. You will be prompted to approve the download, in this case 5488 sequences from the NCBI and 907 sequences from the PATRIC. Sequences available through either database will be downloaded from whichever is passed first, in this case the NCBI. This command actually stops with an error, because some sequences dont have assembly data available (60 will fail to download). This leaves us with 6335 downloaded sequences.
+Download sequence data from the NCBI and PATRIC repositories. It is important the genomes go into a data/{name}/wgs/raw directory. You will be prompted to approve the download, in this case 5488 sequences from the NCBI and 907 sequences from the PATRIC. Sequences available through either database will be downloaded from whichever is passed first, in this case the NCBI. This command actually stops with an error, because some sequencespython acheron/helpers/add_resources.py dont have assembly data available (60 will fail to download). This leaves us with 6335 downloaded sequences.
 
 ## Setup Labels
 
@@ -106,3 +106,13 @@ This will run all tests as seen in the steinkey_et_al_2021 paper.
 ### python acheron/helpers/add_resources.py
 
 If running using slurm, you can pull the wall time and the max RAM from sacct. This command will add Elapsed time and max ram to the summary file in the results folder, alongside accuracy, various error rates. Its important to note that ram is sampled in intervals, not continously (which would have preformance implications). So if there was a temporary spike in RAM that did not exceed the allocated memory of that specific job, MaxRSS might not catch that spike. Also, if a job failed and then was finished in a 2nd job, that test will have 2 sacct files. i.e. trials 1-4 might have a different jobid as trials 5-10. Therefore, if generating average RAM use, trials 1-4 will have to be divided by 4, and trials 5-10 will have to be divided by 6.
+
+###
+
+Now that we have finished models, we can see how well they did.
+
+There are predefined summaries that can be generated, see the wiki.
+
+###
+
+Now that you have finished models, as well as identified top k-mers, we can annotate the genomes and get an idea of where these k-mers are and what they might do.

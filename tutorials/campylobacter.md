@@ -54,6 +54,6 @@ Copy the trained model into the predictions folder. Repeat for each drug.
 
 ## cp data/public_campy/labels/AMR_MIC_encoder.pkl data/predict/models/MIC/campylobacter/encoder.pkl
 
-Move the encoder that was made earlier into the predictions folder, this converts predictions (0,1,2,3,4) into their actually class (e.g. <=0.15 mg/L)
+Move the encoder that was made earlier into the predictions folder, this converts predictions (0,1,2,3,4) into their actual class (e.g. <=0.15 mg/L)
 
 # All done!

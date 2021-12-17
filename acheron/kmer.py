@@ -12,7 +12,7 @@ def print_genome_names(genomes):
     for genome in genomes:
         print(genome)
 
-def build_kmer_matrix(dataset, kmer_length, cores, cluster, prefiltering):
+def build_kmer_matrix(dataset, kmer_length, cores, cluster, prefiltering, trials, cv, hyp, label):
     """
     SLURM NODE INFORMATION
     If running out of memory, lower cores (stay in multiples of 16), keep RAM high
@@ -35,7 +35,7 @@ def build_kmer_matrix(dataset, kmer_length, cores, cluster, prefiltering):
         workflow_smk, cores, kmer_length, dataset, prefiltering))
     elif cluster.upper()== "SLURM":
         os.system("sbatch --partition NMLResearch -c {1} --mem {4}G snakemake -s {0} -j {1} \
-        --config kmer_length={2} dataset={3} cores={1} prefiltering={5} --nolock --ignore-incomplete".format(
-        workflow_smk, cores, kmer_length, dataset, SLURM_RAM, prefiltering))
+        --config kmer_length={2} dataset={3} cores={1} prefiltering={5} trials={6} cv={7} hyp={8} label={9} --nolock --ignore-incomplete".format(
+        workflow_smk, cores, kmer_length, dataset, SLURM_RAM, prefiltering, trials, cv, hyp, label))
     else:
         raise Exception("cluster option {} not recognized, only slurm or none allowed".format(cluster))

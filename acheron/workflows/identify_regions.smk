@@ -85,16 +85,18 @@ rule hit_summary:
     input:
         expand("annotations/"+config['train']+"_{drug}_"+config['type']+"/hits_df.pkl",drug=drugs) #TODO fix path
     output:
-        "annotation/{}_hit_summary.csv".format(config['type'])
+        "annotation/{}_{}_hit_summary.csv".format(config['type'], config['train'])
     run:
         from acheron import gene_finder
         gene_finder.hit_summary(config['train'],output)
 
 rule score_summary:
     input:
-        "annotation/{}_hit_summary.csv".format(config['type'])
+        "annotation/{type}_{train}_hit_summary.csv".format(config['type'], config['train'])
     output:
         "annotation/{}_score_summary.csv".format(config['type'])
+    run:
+        summary = gene_finder.score_summary(wildcards.type, wildcards.train)
 
 rule select_best_hits:
 

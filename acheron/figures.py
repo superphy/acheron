@@ -15,7 +15,7 @@ abx_full_name = ['amoxicillin/clavulanic acid', 'ampicillin', 'azithromycin',
 
 def label_points(x, y, labels, ax):
     for i, label in enumerate(labels):
-        if label in ['CHL', 'NAL']:
+        if label in ['CHL', 'NAL', 'AMC']:
             ax.text(x[i]+0.005, y[i]-0.009, label, fontsize = 7)
         else:
             ax.text(x[i]+0.005, y[i]+0.005, label, fontsize = 7)

@@ -5,6 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 import os, sys
 from itertools import repeat
 from sklearn.feature_selection import f_classif
+from acheron.workflows import supervised_model
 
 def make_row(filename, dataset, kmer_length):
     from Bio import Seq, SeqIO
@@ -162,3 +163,111 @@ def large_feat_select(file_paths, RAM_denom, num_feats, labels):
 
     [127 rows x 72504712 columns]
     """
+
+def filter_feature(feature_data, labels, cv_num, num_of_cv, cv_df, hyp, attribute):
+    """
+    Takes full ~6300 genomes x 1 feature
+    Returns only the kept sequences and their labels according to cv
+    """
+    training_samples = cv_df # needs to factor if hyp or not, check feat select to see if using mod+cv_num
+
+    split_priority = [(i+int(cv_num)-1)%num_of_cv for i in range(num_of_cv)]
+    """
+    split_priority above defines which folds become validation or testing
+    if fold 3 for a 5-fold cross-validation is given, split_priority will look like:
+        [2, 3, 4, 0, 1]
+    where fold 2 becomes the testing set, and 3 becomes validation (if requested, else becomes training)
+    if fold 7 for 10-fold cross-validation is given, split_priority will look like:
+        [6, 7, 8, 9, 0, 1, 2, 3, 4, 5]
+
+    This means for cv we take 2,3,4,0 and for nested cv we take 2,3,4
+    """
+    keep_fold = split_priority[:3]
+
+    mask = []
+    pass #testing if other supervised split works first
+    #return filtered_feats, filtered_labels
+
+def build_variance_matrix(file_paths, RAM_denom, label_name, label_df, cv, hyp, type, trials, dataset_name):
+    """
+    Takes a list of filepaths to slices of a feature matrix
+    Evaluates a subset of features at a time, under defined RAM contraints
+
+    If RAM_denom is set to 5, only 20% of each slice will be kept in ram.
+    You are passing the denominator of a fraction, i.e. 1/2, 1/3, 1/4, 1/20
+    i.e. if you pass 10, then it will reduce ram per slice to 1/10th
+
+    Ram use will then be 0.2*(memory of 1 slice)*(number of slices loaded) + (memory of 1 slice)
+    i.e., it will use more than 20% of the RAM as before, one part of the problem is reduced by 80%
+
+    For each attribute*trial*fold*slice, a df is stored that looks like:
+        f_val,    p_val,    feature
+    0   0.01      0.01      GTAGCATGAATGGGGGTAATCTGGAATGGAA
+    1
+    2
+    """
+    files = os.listdir("data/{}/wgs/raw/".format(dataset_name))
+    files = [i.split('.')[0] for i in files]
+    label_df = label_df[~label_df.index.duplicated(keep='first')]
+    label_df = label_df.reindex(files) # label_df now only has the 6328 rows
+
+    f_values = []
+
+    #  First load one slice, prime everything, then we will loop through the rest after
+    slice1 = pd.read_pickle(file_paths[0])
+    all_feats = slice1.columns
+
+    del slice1
+
+    feat_splits = np.array_split(all_feats, RAM_denom)
+
+    for slice_num in range(RAM_denom):
+        # as stated above, now we loop through the rest
+        slices = []
+        gc.collect()
+
+        for i, file in enumerate(file_paths):
+            if i == 0:
+                slices = pd.read_pickle(file)[feat_splits[slice_num]]
+            else:
+                new_slice = pd.read_pickle(file)[feat_splits[slice_num]]
+                slices = pd.concat([slices,new_slice])
+                del new_slice
+                gc.collect()
+
+        # At this point we have a full matrix for x amount of features. Called slices
+        """
+                f0, f1, f2, .... f128
+        genome1
+        genome2
+        genome6328
+        """
+        already_done = 0
+        new = 0
+        for trial in range(trials):
+            split_df = pd.read_pickle("data/{}/splits/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,cv))
+            splif_df = split_df.reindex(files) #split now only has 6328 samples
+            for attribute in split_df.columns:
+                for fold in range(cv):
+                    out_path = "data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
+                    dataset_name,slice_num+1,RAM_denom,trial,type,label_name,attribute,fold,cv)
+
+                    if os.path.isfile(out_path):
+                        already_done+=1
+                    else:
+                        x_train, y_train, x_val, y_val, x_test, y_test = supervised_model.split_data(slices, label_df, split_df, attribute, hyp, fold, cv, False)
+                        #f_vals = [f_classif(*filter_feature(slices[i], label_df[attribute], fold, cv, split_df[attribute], attribute)) for i in slice.columns]
+                        f_vals, p_vals = f_classif(x_train, y_train)
+
+                        df = pd.DataFrame(data = list(zip(f_vals, p_vals, slices.columns)),columns=['f_val','p_val','feature'])
+                        df.to_pickle(out_path)
+
+                        new+=1
+        print("{} variance files created, {} were already completed".format(new, already_done))
+
+
+    return 0
+
+
+if __name__ == "__main__":
+    pass

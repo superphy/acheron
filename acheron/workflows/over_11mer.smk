@@ -34,13 +34,25 @@ MATRIX_SPLITS = [i+1 for i in range(math.ceil(NUM_GENOMES/128))]
 
 ids, = glob_wildcards(RAW_GENOMES_PATH+"{id}.fasta")
 
+# How much to reduce the ram, denom of 5 means 1/5th the RAM but 5x the time
+RAM_denom = 5 # IF YOU CHANGE THIS, CHANGE IN acheron/workflows/supervised_model.prefilter()
+
+type = str(config['kmer_length'])+'mer'
 
 # if prefiltering, change output of final step, rule merge_sub_matrices
 if bool(config['prefiltering']):
     merge_output = []
+    """
     for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
         merge_output.append("data/{}/features/{}mer_matrix{}.df".format(config['dataset'],
         config['kmer_length'], drug))
+    """
+    for slice_num in range(RAM_denom):
+        for trial in range(config['trials']):
+            for attribute in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
+                for fold in range(config['cv']):
+                    merge_output.append("data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
+                    config['dataset'],slice_num+1,RAM_denom,trial,type,config['label'],attribute,fold, config['cv']))
 else:
     merge_output = "data/{}/features/{}mer_matrix.df".format(config['dataset'],
     config['kmer_length'])
@@ -152,7 +164,8 @@ rule merge_sub_matrices:
         str(config['kmer_length'])+"mers/sub_df_{matrix_num}_of_"
         +str(len(MATRIX_SPLITS))+".df", matrix_num = MATRIX_SPLITS)
     output:
-        merge_output
+         "data/{}/features/{}mer_matrix.df".format(config['dataset'],
+        config['kmer_length'])
     run:
         # again, were hoping that the input is actually a list of inputs,(check)
         #final_matrix = pd.concat([pd.read_pickle(i) for i in input])
@@ -200,3 +213,17 @@ rule merge_sub_matrices:
 
                 del drug_matrix
                 gc.collect()
+
+
+
+rule build_variance_matrices:
+    input:
+        expand("data/"+config['dataset']+"/wgs/master_"+
+        str(config['kmer_length'])+"mers/sub_df_{matrix_num}_of_"
+        +str(len(MATRIX_SPLITS))+".df", matrix_num = MATRIX_SPLITS)
+    output:
+        merge_output
+    run:
+        label_df = pd.read_pickle("data/{}/labels/{}.df".format(config['dataset'],config['label']))
+        over_11mer_matrix.build_variance_matrix(input, RAM_denom, config['label'],
+            label_df, config['cv'], config['hyp'], type, config['trials'], config['dataset'])
