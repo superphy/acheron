@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/superphy/acheron.svg?style=svg)](https://circleci.com/gh/superphy/acheron)
 
-Acheron is a command line based workflow manager that allows for large scale, fast, and memory effecient machine-learning analyses of whole-genome sequence data.
+Acheron is a command line based workflow manager that allows for large scale, fast, and memory efficient machine-learning analyses of whole-genome sequence data.
 
 This repository is under active development, see wiki for instructions.
 

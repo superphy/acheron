@@ -31,8 +31,8 @@ def build_kmer_matrix(dataset, kmer_length, cores, cluster, prefiltering, trials
 
     if cluster.upper()=='NONE':
         os.system("snakemake -s {0} -j {1} \
-        --config kmer_length={2} dataset={3} cores={1} prefiltering={4}".format(
-        workflow_smk, cores, kmer_length, dataset, prefiltering))
+        --config kmer_length={2} dataset={3} cores={1} prefiltering={4} trials={5} cv={6} hyp={7} label={8}".format(
+        workflow_smk, cores, kmer_length, dataset, prefiltering, trials, cv, hyp, label))
     elif cluster.upper()== "SLURM":
         os.system("sbatch --partition NMLResearch -c {1} --mem {4}G snakemake -s {0} -j {1} \
         --config kmer_length={2} dataset={3} cores={1} prefiltering={5} trials={6} cv={7} hyp={8} label={9} --nolock --ignore-incomplete".format(

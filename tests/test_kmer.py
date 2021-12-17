@@ -15,7 +15,7 @@ def test_build_kmer_matrix():
     import os
 
     #11mer
-    kmer.build_kmer_matrix(dataset, 11, 1, 'none', 'False')
+    kmer.build_kmer_matrix(dataset, 11, 1, 'none', 'False',1,5,False,'AMR_MIC')
     df = pd.read_pickle("data/{}/features/11mer_matrix.df".format(dataset))
     assert len(df.values) == 1
     assert len(df.values[0]) == (4**11)/2
@@ -28,7 +28,7 @@ def test_build_kmer_matrix():
     os.system("rm -r data/acheron_test_samples/wgs/clean/")
 
     #31mer
-    kmer.build_kmer_matrix(dataset, 31, 1, 'none', 'False')
+    kmer.build_kmer_matrix(dataset, 31, 1, 'none', 'False',1,5,False,'AMR_MIC')
     df = pd.read_pickle("data/{}/features/31mer_matrix.df".format(dataset))
     assert len(df.values) == 1
     assert len(df.values[0]) == 4294

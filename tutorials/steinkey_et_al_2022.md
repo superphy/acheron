@@ -35,7 +35,7 @@ Create a folder for your project, including a folder for genomes sequences to go
 First we need the antimicrobial resistance data. Once we have a list of genomes that we have AMR data for, we can then download those genomes after. This downloads all AMR data from the NCBI and the PATRIC repositories and formats them into a single datasheet.
 
 ### `acheron download genomes --pathogen Salmonella -db NCBI -db PATRIC --output data/salm_amr/wgs/raw`
-Download sequence data from the NCBI and PATRIC repositories. It is important the genomes go into a data/{name}/wgs/raw directory. You will be prompted to approve the download, in this case 5488 sequences from the NCBI and 907 sequences from the PATRIC. Sequences available through either database will be downloaded from whichever is passed first, in this case the NCBI. This command actually stops with an error, because some sequencespython acheron/helpers/add_resources.py dont have assembly data available (60 will fail to download). This leaves us with 6335 downloaded sequences.
+Download sequence data from the NCBI and PATRIC repositories. It is important the genomes go into a data/{name}/wgs/raw directory. You will be prompted to approve the download, in this case 5488 sequences from the NCBI and 907 sequences from the PATRIC. Sequences available through either database will be downloaded from whichever is passed first, in this case the NCBI. This command actually stops with an error, because some sequences dont have assembly data available (60 will fail to download). This leaves us with 6335 downloaded sequences.
 
 ## Setup Labels
 

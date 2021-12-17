@@ -40,19 +40,21 @@ RAM_denom = 5 # IF YOU CHANGE THIS, CHANGE IN acheron/workflows/supervised_model
 type = str(config['kmer_length'])+'mer'
 
 # if prefiltering, change output of final step, rule merge_sub_matrices
+
+pref_output = []
+"""
+for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
+    merge_output.append("data/{}/features/{}mer_matrix{}.df".format(config['dataset'],
+    config['kmer_length'], drug))
+"""
+for slice_num in range(RAM_denom):
+    for trial in range(config['trials']):
+        for attribute in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
+            for fold in range(config['cv']):
+                pref_output.append("data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
+                config['dataset'],slice_num+1,RAM_denom,trial,type,config['label'],attribute,fold, config['cv']))
 if bool(config['prefiltering']):
-    merge_output = []
-    """
-    for drug in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
-        merge_output.append("data/{}/features/{}mer_matrix{}.df".format(config['dataset'],
-        config['kmer_length'], drug))
-    """
-    for slice_num in range(RAM_denom):
-        for trial in range(config['trials']):
-            for attribute in ['AMP','AMC','AZM','CHL','CIP','CRO','FIS','FOX','GEN','NAL','SXT','TET','TIO','STR','KAN']:
-                for fold in range(config['cv']):
-                    merge_output.append("data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
-                    config['dataset'],slice_num+1,RAM_denom,trial,type,config['label'],attribute,fold, config['cv']))
+    merge_output = pref_output
 else:
     merge_output = "data/{}/features/{}mer_matrix.df".format(config['dataset'],
     config['kmer_length'])
@@ -222,7 +224,7 @@ rule build_variance_matrices:
         str(config['kmer_length'])+"mers/sub_df_{matrix_num}_of_"
         +str(len(MATRIX_SPLITS))+".df", matrix_num = MATRIX_SPLITS)
     output:
-        merge_output
+        pref_output
     run:
         label_df = pd.read_pickle("data/{}/labels/{}.df".format(config['dataset'],config['label']))
         over_11mer_matrix.build_variance_matrix(input, RAM_denom, config['label'],

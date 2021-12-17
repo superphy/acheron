@@ -2,12 +2,12 @@ import pytest
 from acheron import summary
 import pandas as pd
 
-def test_load_steinkey2021():
+def test_load_steinkey2022():
     try:
         pd.read_pickle("results/model=ANN_train=grdi_test=none_validate=none_feats=1000_type=11mer_hyp=False_cvfolds=5_attribute=AMC_trial=0/summary.df")
     except:
         pytest.skip("Skipping test that requires results data")
-    res = summary.load_steinkey2021()
+    res = summary.load_steinkey2022()
 
     assert res.shape[0] > 4700
     assert len(res.columns) == 10
@@ -18,7 +18,7 @@ def test_add_results():
     except:
         pytest.skip("Skipping test that requires results data")
 
-    full_res = summary.add_results(summary.load_steinkey2021())
+    full_res = summary.add_results(summary.load_steinkey2022())
 
     assert full_res.shape[0] > 4700
 
@@ -44,8 +44,8 @@ def test_summarize():
         pd.read_pickle("results/model=ANN_train=grdi_test=none_validate=none_feats=1000_type=11mer_hyp=False_cvfolds=5_attribute=AMC_trial=0/summary.df")
     except:
         pytest.skip("Skipping test that requires results data")
-    results = summary.load_steinkey2021()
+    results = summary.load_steinkey2022()
     results = summary.add_results(results)
     results = summary.weigh_jobs_per_slurm(results)
 
-    summ = summary.summarize(results,'steinkey2021', 'table')
+    summ = summary.summarize(results,'steinkey2022', 'table')

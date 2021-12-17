@@ -255,7 +255,7 @@ def build_variance_matrix(file_paths, RAM_denom, label_name, label_df, cv, hyp, 
                     if os.path.isfile(out_path):
                         already_done+=1
                     else:
-                        x_train, y_train, x_val, y_val, x_test, y_test = supervised_model.split_data(slices, label_df, split_df, attribute, hyp, fold, cv, False)
+                        x_train, y_train, x_test, y_test = supervised_model.split_data(slices, label_df, split_df, attribute, hyp, fold, cv, False)
                         #f_vals = [f_classif(*filter_feature(slices[i], label_df[attribute], fold, cv, split_df[attribute], attribute)) for i in slice.columns]
                         f_vals, p_vals = f_classif(x_train, y_train)
 

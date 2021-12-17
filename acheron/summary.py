@@ -3,9 +3,9 @@ import numpy as np
 import sys
 from collections import Counter
 
-def load_steinkey2021():
-    from acheron.helpers.rerun_missed import steinkey2021
-    tests = steinkey2021()
+def load_steinkey2022():
+    from acheron.helpers.rerun_missed import steinkey2022
+    tests = steinkey2022()
 
     print("Looking for {} results".format(len(tests)))
 
@@ -13,7 +13,7 @@ def load_steinkey2021():
     model,train,test,validate,feats,hyp,cvfolds,attribute,trial
     ['XGB', 'salm_amr', 'none', 'none', '100', 'False', 5, 'AMP', '0']
     """
-    cols = ['model','train','test','validate','feats','hyp','cvfolds','attribute','trial']
+    cols = ['model','train','test','validate','feats','type','hyp','cvfolds','attribute','trial']
 
     res = []
     for test in tests:
@@ -30,7 +30,7 @@ def load_steinkey2021():
 
 def add_results(tests):
     """
-    Takes a df of tests, such as from load_steinkey2021,
+    Takes a df of tests, such as from load_steinkey2022,
     then adds to the dataframe the results of those tests
     """
     # res order for MIC is
@@ -41,7 +41,7 @@ def add_results(tests):
     stats = []
     failed = []
     for test in tests.values:
-        res_path = "results/model={}_train={}_test={}_validate={}_feats={}_type=11mer_hyp={}_cvfolds={}_attribute={}_trial={}/summary.df".format(*test)
+        res_path = "results/model={}_train={}_test={}_validate={}_feats={}_type={}_hyp={}_cvfolds={}_attribute={}_trial={}/summary.df".format(*test)
         res = pd.read_pickle(res_path)
 
 
@@ -114,7 +114,7 @@ def summarize(results, subset, media):
     cols = ['model','train','test','validate','feats','hyp','cvfolds','attribute','trial']
     """
 
-    if subset =='steinkey2021':
+    if subset =='steinkey2022':
         datasets = [['salm_amr','none','none'],['grdi','none','none'],['salm_amr','grdi','none'],['grdi','salm_amr','none']]
         models = ['XGB','SVM','ANN']
 
@@ -185,8 +185,8 @@ def summarize(results, subset, media):
         raise Exception("Summaries need to be defined, either make your own or call one in summary.py")
 
 def make_summary(subset, out, media):
-    if subset == 'steinkey2021':
-        results = load_steinkey2021()
+    if subset == 'steinkey2022':
+        results = load_steinkey2022()
         results = add_results(results)
         results = weigh_jobs_per_slurm(results)
         results = convert(results)
