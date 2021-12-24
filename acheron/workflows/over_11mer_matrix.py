@@ -240,14 +240,17 @@ def build_variance_matrix(file_paths, RAM_denom, label_name, label_df, cv, hyp, 
                 f0, f1, f2, .... f128
         genome1
         genome2
-        genome6328
+        genome6328mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))[attribute]
         """
         already_done = 0
         new = 0
         for trial in range(trials):
             split_df = pd.read_pickle("data/{}/splits/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,cv))
-            splif_df = split_df.reindex(files) #split now only has 6328 samples
+            split_df = split_df.reindex(files) #split now only has 6328 samples
             for attribute in split_df.columns:
+                labels = label_df[attribute]
+                mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))[attribute]
+                attr_slices, labels = supervised_model.apply_mask(slices, labels, mask)
                 for fold in range(cv):
                     out_path = "data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
                     dataset_name,slice_num+1,RAM_denom,trial,type,label_name,attribute,fold,cv)
@@ -255,19 +258,98 @@ def build_variance_matrix(file_paths, RAM_denom, label_name, label_df, cv, hyp, 
                     if os.path.isfile(out_path):
                         already_done+=1
                     else:
-                        x_train, y_train, x_test, y_test = supervised_model.split_data(slices, label_df, split_df, attribute, hyp, fold, cv, False)
-                        #f_vals = [f_classif(*filter_feature(slices[i], label_df[attribute], fold, cv, split_df[attribute], attribute)) for i in slice.columns]
+                        x_train, y_train, x_test, y_test = supervised_model.split_data(attr_slices, labels, split_df, attribute, hyp, fold, cv, False)
                         f_vals, p_vals = f_classif(x_train, y_train)
 
-                        df = pd.DataFrame(data = list(zip(f_vals, p_vals, slices.columns)),columns=['f_val','p_val','feature'])
+                        for deletable in [x_train, y_train, x_test, y_test]:
+                            del deletable
+                        gc.collect()
+
+                        df = pd.DataFrame(data = list(zip(f_vals, p_vals, attr_slices.columns)),columns=['f_val','p_val','feature'])
                         df.to_pickle(out_path)
 
                         new+=1
         print("{} variance files created, {} were already completed".format(new, already_done))
+
+    return 0
+
+def manual_variance_call(slice_num, trial, attribute):
+    """
+    This functions as a way to call the
+    build_variance_matrix() above manually from the command line. Please dont use
+    """
+    #file_paths, RAM_denom, label_name, label_df, cv, hyp, type, trials, dataset_name
+    #save_path = "slice{}_of_5_trial={}_type=31mer_label=AMR_MIC_attribute={}_fold={}_of_5xCV.df".format(slice,trial,attribute,i)
+    if np.sum([os.path.isfile("slice{}_of_5_trial={}_type=31mer_label=AMR_MIC_attribute={}_fold={}_of_5xCV.df".format(slice_num+1,trial,attribute,i)) for i in range(5)]) ==5:
+        print("already created these files")
+        sys.exit()
+    file_paths = ["data/salm_amr/wgs/master_31mers/sub_df_{}_of_50.df".format(i+1) for i in range(50)]
+    RAM_denom = 5
+    label_name = 'AMR_MIC'
+    label_df = pd.read_pickle("data/salm_amr/labels/AMR_MIC.df")
+    cv = 5
+    hyp = False
+    type = '31mer'
+    trials = 1
+    dataset_name = 'salm_amr'
+
+    files = os.listdir("data/{}/wgs/raw/".format(dataset_name))
+    files = [i.split('.')[0] for i in files]
+    label_df = label_df[~label_df.index.duplicated(keep='first')]
+    label_df = label_df.reindex(files) # label_df now only has the 6328 rows
+
+    f_values = []
+
+    #  First load one slice, prime everything, then we will loop through the rest after
+    slice1 = pd.read_pickle(file_paths[0])
+    all_feats = slice1.columns
+
+    del slice1
+
+    feat_splits = np.array_split(all_feats, RAM_denom)
+
+
+    slices = []
+    gc.collect()
+
+    for i, file in enumerate(file_paths):
+        if i == 0:
+            slices = pd.read_pickle(file)[feat_splits[slice_num]]
+        else:
+            new_slice = pd.read_pickle(file)[feat_splits[slice_num]]
+            slices = pd.concat([slices,new_slice])
+            del new_slice
+            gc.collect()
+
+    split_df = pd.read_pickle("data/{}/splits/split{}_{}_{}_{}xCV.df".format(dataset_name,trial,type,label_name,cv))
+    split_df = split_df.reindex(files) #split now only has 6328 samples
+
+    labels = label_df[attribute]
+    mask = pd.read_pickle("data/{}/features/masks/{}_{}.df".format(dataset_name,type,label_name))[attribute]
+    attr_slices, labels = supervised_model.apply_mask(slices, labels, mask)
+    for fold in range(cv):
+        out_path = "data/{}/variance/slice{}_of_{}_trial={}_type={}_label={}_attribute={}_fold={}_of_{}xCV.df".format(
+        dataset_name,slice_num,RAM_denom,trial,type,label_name,attribute,fold,cv)
+
+        x_train, y_train, x_test, y_test = supervised_model.split_data(attr_slices, labels, split_df, attribute, hyp, fold, cv, False)
+        f_vals, p_vals = f_classif(x_train, y_train)
+
+        for deletable in [x_train, y_train, x_test, y_test]:
+            del deletable
+        gc.collect()
+
+        df = pd.DataFrame(data = list(zip(f_vals, p_vals, attr_slices.columns)),columns=['f_val','p_val','feature'])
+        df.to_pickle(out_path)
 
 
     return 0
 
 
 if __name__ == "__main__":
-    pass
+    raise Exception("Please use the acheron commands to call this module")
+    # if you know what you are doing, comment out the exception above
+    # then run the command
+    """
+    do sbatch -c 1 --mem 700G --partition NMLResearch --job-name acheron --wrap="python acheron/workflows/over_11mer_matrix.py $slice $trial $drug"
+    """
+    manual_variance_call(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])
