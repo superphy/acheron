@@ -6,7 +6,6 @@ test_fasta = 'data/acheron_test_samples/wgs/raw/subSRR2407535.fasta'
 out = 'data/acheron_test_samples/wgs/clean/'
 
 def test_get_files_to_analyze():
-    assert False
     files = clean.get_files_to_analyze(test_fasta)
     assert len(files) == 1
     assert '/'.join(files[0].split('/')[-5:]) == test_fasta
